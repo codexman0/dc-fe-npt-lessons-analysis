@@ -1,4 +1,4 @@
-import { memo, useMemo, useEffect } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { get } from 'lodash';
 import {
@@ -12,24 +12,24 @@ import {
 } from '@material-ui/core';
 
 import {
-  ArrowDownward as ArrowDownwardIcon,
-  ArrowUpward as ArrowUpwardIcon,
   KeyboardArrowRight as ArrowRightIcon,
   KeyboardArrowLeft as ArrowLeftIcon,
 } from '@material-ui/icons';
 
-import { getUnit } from '../../../utils/unitConversion';
 import { HIGHLIGHTING_METRICS } from '../../../constants';
 import LearnTableRow from './LearnTableRow';
 
 const useStyles = makeStyles({
   headerCell: {
     padding: '6px 0 6px 10px',
-    background: '#201f1f',
+    background: '#202020',
     borderTop: '1px solid #5C5C5C',
     color: '#9e9e9e',
     fontSize: '12px',
     lineHeight: '14px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
   },
   headerCellContent: {
     display: 'flex',
@@ -44,7 +44,7 @@ const useStyles = makeStyles({
   },
   sortIcon: {
     cursor: 'pointer',
-    fontSize: '12px',
+    fontSize: '16px',
     '&:hover': {
       color: '#fff',
     },
@@ -52,11 +52,11 @@ const useStyles = makeStyles({
   },
 });
 
-function getCellStyles(key) {
+function getCellStyles(key, zIndex) {
   if (key === 'type') {
-    return { left: 0, position: 'sticky' };
+    return { left: 0, position: 'sticky', zIndex };
   } else if (key === 'wellName') {
-    return { left: '40px', position: 'sticky', boxShadow: '5px 0px 5px grey' };
+    return { left: '40px', position: 'sticky', boxShadow: '5px 0px 5px #1b1b1b', zIndex };
   }
   return {};
 }
@@ -67,31 +67,20 @@ function LearnTable({
   showWellFullName,
   onChangeShowWellFullName,
   tableSettings,
-  activeBha,
-  sortInfo,
   onMouseEvent,
-  onRemoveBHA,
-  onChangeSortInfo,
-  handleApplyBha,
 }) {
-  const tableColumns = tableSettings.filter(column => column.show);
   const classes = useStyles({
     isLightTheme: theme.isLightTheme,
   });
-
+  const [tableData, setTableData] = useState([]);
+  const tableColumns = tableSettings.filter(column => column.show);
   useEffect(() => {
-    const { wellId, bhaId, eventFrom } = activeBha;
-    if (!Number.isFinite(wellId) || !Number.isFinite(bhaId) || eventFrom === 'table') {
-      return;
-    }
-
-    const uidToScroll = `${wellId}-${bhaId}`;
-    document.getElementById(uidToScroll).focus();
-  }, [activeBha]);
+    setTableData(data);
+  }, [data]);
 
   const minMaxDict = useMemo(() => {
     const result = {};
-    data.forEach(record => {
+    tableData.forEach(record => {
       HIGHLIGHTING_METRICS.forEach(key => {
         if (!result[key] && Number.isFinite(get(record, key))) {
           result[key] = {
@@ -107,58 +96,39 @@ function LearnTable({
       });
     });
     return result;
-  }, [data]);
+  }, [tableData]);
 
   const handleClickHeaderCell = column => {
-    if (!column.sortable) {
-      return;
-    }
-
-    if (sortInfo.key === column.key) {
-      onChangeSortInfo({
-        ...sortInfo,
-        direction: sortInfo.direction === 'asc' ? 'desc' : 'asc',
-      });
-    } else {
-      onChangeSortInfo({
-        key: column.key,
-        direction: 'asc',
-      });
-    }
+    console.log('handleClickHeaderCell=', column);
   };
 
+  const handleClickMoreCell = row => {
+    const data = tableData.map(item =>
+      item.id === row.id ? { ...item, isMore: !item.isMore } : item
+    );
+    setTableData(data);
+  };
+  console.log('tableData=', tableData);
   return (
     <>
-      <Table aria-label="npt table">
+      <Table aria-label="npt table" style={{ borderCollapse: 'separate' }}>
         <TableHead>
           <TableRow>
             {tableColumns.map(columnSettings => (
               <TableCell
                 key={columnSettings.key}
                 className={classes.headerCell}
-                style={getCellStyles(columnSettings.key)}
+                style={getCellStyles(columnSettings.key, 3)}
               >
                 <div
                   className={classes.headerCellContent}
                   onClick={() => handleClickHeaderCell(columnSettings)}
                   style={{
                     cursor: columnSettings.sortable ? 'pointer' : 'auto',
-                    width: columnSettings.width - 10,
+                    minWidth: columnSettings.width - 10,
                   }}
                 >
-                  <span className={classes.headerCellInnerContent}>
-                    {columnSettings.label}
-                    {columnSettings.unitType ? getUnit(columnSettings.key) : ''}
-                    {columnSettings.key === sortInfo.key && (
-                      <>
-                        {sortInfo.direction === 'asc' ? (
-                          <ArrowUpwardIcon className={classes.sortIcon} />
-                        ) : (
-                          <ArrowDownwardIcon className={classes.sortIcon} />
-                        )}
-                      </>
-                    )}
-                  </span>
+                  <span className={classes.headerCellInnerContent}>{columnSettings.label}</span>
 
                   {columnSettings.key === 'wellName' && (
                     <>
@@ -182,17 +152,15 @@ function LearnTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.map(rowData => (
+          {tableData.map(rowData => (
             <LearnTableRow
               key={`${rowData.wellId}-${rowData.bhaId}`}
-              isActive={rowData.wellId === activeBha.wellId && rowData.bhaId === activeBha.bhaId}
               showWellFullName={showWellFullName}
               rowData={rowData}
               rowSettings={tableColumns}
               minMaxDict={minMaxDict}
               onMouseEvent={onMouseEvent}
-              onRemove={onRemoveBHA}
-              handleApplyBha={handleApplyBha}
+              handleClickMoreCell={handleClickMoreCell}
               getCellStyles={getCellStyles}
             />
           ))}
@@ -210,19 +178,7 @@ LearnTable.propTypes = {
   }).isRequired,
   data: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-  activeBha: PropTypes.shape({
-    wellId: PropTypes.number,
-    bhaId: PropTypes.number,
-    eventFrom: PropTypes.string,
-  }).isRequired,
-  sortInfo: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    direction: PropTypes.string.isRequired,
-  }).isRequired,
-  onChangeSortInfo: PropTypes.func.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
-  onRemoveBHA: PropTypes.func.isRequired,
-  handleApplyBha: PropTypes.func.isRequired,
 };
 
 export default withTheme(memo(LearnTable));

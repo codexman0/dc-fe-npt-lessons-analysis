@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
+import moment from 'moment-timezone';
 import { get, debounce } from 'lodash';
 import {
   TableCell,
@@ -14,7 +15,8 @@ import {
 
 import { MoreVert as MoreVertIcon } from '@material-ui/icons';
 
-import { getSymbolOfMotorSize } from '../../../utils/unitConversion';
+import LessonsTypeIcon from './LessonsTypeIcon';
+import Description from './Description';
 import { HIGHLIGHTING_METRICS, LOW_VALUE_GOOD_METRICS } from '../../../constants';
 
 const useStyles = makeStyles({
@@ -25,11 +27,21 @@ const useStyles = makeStyles({
   },
   bodyCell: {
     padding: '8px 0 8px 10px',
-    background: '#201f1f',
+    background: '#202020',
   },
-  tickCellValue: {
-    fontSize: 13,
-    position: 'sticky',
+  tickCellValue: ({ showWellFullName }) => {
+    if (showWellFullName) {
+      return {
+        fontSize: 13,
+        position: 'sticky',
+        marginRight: '8px',
+      };
+    } else {
+      return {
+        fontSize: 13,
+        position: 'sticky',
+      };
+    }
   },
   bodyCellValue: {
     fontSize: 13,
@@ -64,94 +76,71 @@ function formatNumber(value, precision) {
   return Number.isFinite(parseFloat(value)) ? parseFloat(value).toFixed(precision) : '-';
 }
 
-function formatMotorConfig(motorData, isForCSV = false) {
-  if (!motorData) {
-    return '-';
+function formatType(color) {
+  if (color === 'lessons') {
+    return (
+      <div
+        style={{
+          background: '#3B3B3B',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <LessonsTypeIcon />
+      </div>
+    );
   }
-
-  const motorDiameter = formatNumber(get(motorData, 'outer_diameter'), 1);
-  const motorStages = formatNumber(get(motorData, 'stages'), 1);
-  const motorRotorlobe = formatNumber(get(motorData, 'number_rotor_lobes'), 1);
-  const motorStatorlobe = formatNumber(get(motorData, 'number_stator_lobes'), 1);
-  const motorRPG = formatNumber(get(motorData, 'rpg'), 2);
-  const motorBend = formatNumber(get(motorData, 'bend_range'), 2);
-  const motorMfr = get(motorData, 'make', '-');
-
-  if (isForCSV) {
-    return [
-      `${motorDiameter}${getSymbolOfMotorSize()}`,
-      motorMfr,
-      `${motorRotorlobe}/${motorStatorlobe}`,
-      motorStages,
-      `${motorRPG}RPG`,
-      motorBend,
-    ].join(' ');
-  }
-
   return (
-    <span>
-      {motorDiameter}
-      <small>{getSymbolOfMotorSize()}</small>&nbsp;
-      {motorMfr}&nbsp;
-      <br />
-      {motorRotorlobe}/{motorStatorlobe}&nbsp;
-      {motorStages}&nbsp;
-      {motorRPG}&nbsp;RPG&nbsp;
-      {motorBend}
-      <small>&ordm;</small>&nbsp;
-    </span>
+    <div
+      style={{
+        background: color,
+        marginLeft: '6px',
+        width: '12px',
+        height: '12px',
+        borderRadius: '2px',
+      }}
+    />
   );
 }
 
-function formatCell(rowData, dataKey) {
+function formatDescription(row, text, isMore, onClickMore) {
+  const handleClickMoreButton = () => {
+    onClickMore(row);
+  };
+
+  return (
+    <div>
+      <Description text={text} isMore={isMore} onClickMore={handleClickMoreButton} />
+    </div>
+  );
+}
+
+function formatDateTime(timestamp) {
+  return moment.unix(timestamp).format('MM/DD/YYYY HH:mm');
+}
+
+function formatCell(rowData, dataKey, isMore, onClickMore) {
   let result;
   switch (dataKey) {
-    case 'start_depth':
-    case 'hole_depth':
-    case 'hole_depth_change':
-    case 'drilled_feet_rotary':
-    case 'drilled_feet_slide':
-    case 'rop_rotary_percentiles.median':
-    case 'rop_slide_percentiles.median':
-    case 'on_bottom_percentage':
-    case 'drilled_feet_slide_percentage':
-    case 'cost_per_ft':
-    case 'mse_percentiles.median':
-    case 'bit_rpm_percentiles.median':
-    case 'rpm_percentiles.median':
-    case 'flow_in_percentiles.median':
-    case 'diff_pressure_percentiles.median':
-    case 'wob_percentiles.median':
-      result = formatNumber(get(rowData, dataKey), 0);
+    case 'type':
+      result = formatType(get(rowData, dataKey));
       break;
-    case 'hole_size':
-    case 'motorData.outer_diameter':
+    case 'tvd':
       result = formatNumber(get(rowData, dataKey), 3);
       break;
-    case 'gross_time':
-    case 'bitTFA':
-    case 'motorData.bend_range':
-    case 'motorData.bit_to_bend':
-    case 'motorData.rpg':
-    case 'build_rate':
-    case 'turn_rate':
-    case 'on_bottom_time':
-    case 'hwdpLength':
-    case 'min_inclination':
-    case 'max_inclination':
-    case 'min_vertical_section':
-    case 'max_vertical_section':
-    case 'rop_rotary':
-    case 'rop_slide':
-    case 'step_out':
-    case 'rop':
-      result = formatNumber(get(rowData, dataKey), 2);
+    case 'startTime':
+    case 'endTime':
+      result = formatDateTime(get(rowData, dataKey));
       break;
-    case 'max_dls':
-      result = formatNumber(get(rowData, dataKey), 2);
+    case 'link':
+      result = '-';
       break;
-    case 'motorConfig':
-      result = formatMotorConfig(rowData.motorData);
+    case 'description':
+      result = formatDescription(rowData, get(rowData, dataKey), isMore, onClickMore);
       break;
     default:
       result = get(rowData, dataKey) || '-';
@@ -163,14 +152,14 @@ function formatWellName(wellName, showWellFullName) {
   if (showWellFullName) {
     return wellName;
   }
-  return wellName.length > 20 ? `${wellName.slice(0, 20)}...` : wellName;
+  return wellName.length > 26 ? `${wellName.slice(0, 26)}...` : wellName;
 }
 
 function formatWellNameTooltip(wellName, showWellFullName) {
   if (showWellFullName) {
     return '';
   }
-  return wellName.length > 20 ? wellName : '';
+  return wellName.length > 26 ? wellName : '';
 }
 
 const debouncedMouseEvent = debounce((data, cb) => cb(data), 500);
@@ -180,26 +169,26 @@ function LearnTableRow({
   rowData,
   rowSettings,
   minMaxDict,
-  isActive,
   onMouseEvent,
   onRemove,
+  handleClickMoreCell,
   getCellStyles,
 }) {
-  const classes = useStyles();
-  const rowStyle = isActive ? { background: '#2c2c2c' } : null;
+  const classes = useStyles({ showWellFullName });
+  const rowStyle = { background: '#2c2c2c' };
   const [actionAnchorEl, setActionAnchorEl] = useState(null);
 
   const handleMouseEnter = () => {
-    const data = {
-      wellId: rowData.wellId,
-      bhaId: rowData.bhaId,
-      eventFrom: 'table',
-    };
-    debouncedMouseEvent(data, onMouseEvent);
+    // const data = {
+    //   wellId: rowData.wellId,
+    //   bhaId: rowData.bhaId,
+    //   eventFrom: 'table',
+    // };
+    // debouncedMouseEvent(data, onMouseEvent);
   };
 
   const handleMouseLeave = () => {
-    debouncedMouseEvent({}, onMouseEvent);
+    // debouncedMouseEvent({}, onMouseEvent);
   };
 
   const handleOpenActionMenu = e => {
@@ -211,12 +200,12 @@ function LearnTableRow({
   };
 
   const handleRemove = () => {
-    onRemove(rowData.wellId, rowData.bhaId);
     setActionAnchorEl(null);
   };
+
   return (
     <TableRow
-      id={`${rowData.wellId}-${rowData.bhaId}`}
+      id={`${rowData.wellId}`}
       tabIndex={0}
       className={classes.tableRow}
       style={rowStyle}
@@ -227,7 +216,7 @@ function LearnTableRow({
         <TableCell
           key={columnSettings.key}
           className={classes.bodyCell}
-          style={getCellStyles(columnSettings.key)}
+          style={getCellStyles(columnSettings.key, 2)}
         >
           {columnSettings.key === 'wellName' ? (
             <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
@@ -242,12 +231,10 @@ function LearnTableRow({
             </Tooltip>
           ) : (
             <Typography
-              className={
-                columnSettings.key === 'type' ? classes.tickCellValue : classes.bodyCellValue
-              }
+              className={classes.bodyCellValue}
               style={getFontStyle(minMaxDict, rowData, columnSettings.key)}
             >
-              {formatCell(rowData, columnSettings.key)}
+              {formatCell(rowData, columnSettings.key, rowData.isMore, handleClickMoreCell)}
             </Typography>
           )}
         </TableCell>
@@ -265,7 +252,6 @@ function LearnTableRow({
           </IconButton>
         </Tooltip>
       </TableCell>
-
       <Menu
         anchorEl={actionAnchorEl}
         keepMounted
@@ -286,17 +272,16 @@ function LearnTableRow({
 LearnTableRow.propTypes = {
   showWellFullName: PropTypes.bool.isRequired,
   rowData: PropTypes.shape({
-    wellId: PropTypes.number.isRequired,
-    drillstring: PropTypes.shape({}).isRequired,
-    wellName: PropTypes.string.isRequired,
-    bhaId: PropTypes.number.isRequired,
-    schematic: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
+    wellId: PropTypes.number,
+    wellName: PropTypes.string,
+    type: PropTypes.string,
+    isMore: PropTypes.bool,
   }).isRequired,
   rowSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
   minMaxDict: PropTypes.shape({}).isRequired,
-  isActive: PropTypes.bool.isRequired,
   onMouseEvent: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
+  handleClickMoreCell: PropTypes.func.isRequired,
   getCellStyles: PropTypes.func.isRequired,
 };
 
