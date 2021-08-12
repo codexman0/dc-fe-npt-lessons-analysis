@@ -1,26 +1,10 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { get } from 'lodash';
 import { makeStyles } from '@material-ui/core';
 
 import SharedAxis from './SharedAxis';
 import WellContent from './WellContent';
-import { getAppSize } from './utils/responsive';
-import {
-  fetchWellsData,
-  fetchWellLiveData,
-  fetchNptPickList,
-  fetchLithologyPickList,
-} from './utils/apiCall';
-import {
-  getMaxDepth,
-  getInitHazardFilters,
-  getInitFormationFilters,
-  getInitZoom,
-  processWellsData,
-  injectLiveData,
-} from './utils/dataProcessing';
 
 const useStyles = makeStyles({
   mainContentWrapper: {
@@ -77,73 +61,9 @@ const useStyles = makeStyles({
   },
 });
 
-function ChartTable(props) {
+function ChartTable({ appSize, zoom, wellsData, formationsFilters, hazardFilters, maxDepth }) {
   const classes = useStyles();
-
-  const { well, coordinates, query, currentUser, selectedWellIds } = props;
-  const assetId = well && get(well, 'asset_id');
-  const assetStatus = well && get(well, 'status');
-  const offsetWellIds = useMemo(() => {
-    return selectedWellIds || [];
-  }, [selectedWellIds]);
-  const appSize = getAppSize(coordinates, false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [wellsData, setWellsData] = useState([]);
-  const [formationsFilters, setFormationsFilters] = useState({ on: true });
-  const [hazardFilters, setHazardFilters] = useState({ on: true });
-  const [maxDepth, setMaxDepth] = useState(null);
-  const [zoom, setZoom] = useState(null);
-
-  useEffect(() => {
-    if (!assetId) {
-      return;
-    }
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      const [rawWellsData, nptPickList, lithologyPickList] = await Promise.all([
-        fetchWellsData(assetId, query, offsetWellIds),
-        fetchNptPickList(),
-        fetchLithologyPickList(),
-      ]);
-      const processedWellsData = processWellsData(rawWellsData, nptPickList, lithologyPickList);
-
-      const initialMaxDepth = getMaxDepth(processedWellsData);
-      const initialZoom = [0, initialMaxDepth];
-      // if hazard and/or formation filter is empty, fill with npt pick list
-      setHazardFilters(prev => getInitHazardFilters(prev, nptPickList));
-      setFormationsFilters(prev => getInitFormationFilters(prev, lithologyPickList));
-
-      setMaxDepth(initialMaxDepth);
-      setZoom(prev => getInitZoom(prev, initialZoom));
-      setWellsData(processedWellsData);
-      setIsLoading(false);
-    };
-
-    fetchData();
-
-    const fetchAndInjectLiveData = async () => {
-      if (query || assetStatus !== 'active') {
-        return;
-      }
-
-      const liveData = await fetchWellLiveData(assetId);
-      setWellsData(prev => {
-        const newData = injectLiveData(prev, liveData);
-        return newData;
-      });
-    };
-
-    const intervalHandler = setInterval(() => {
-      fetchAndInjectLiveData();
-    }, 30 * 1000); // Get the live data for every 30 seconds only for subject well
-
-    // eslint-disable-next-line consistent-return
-    return () => {
-      clearInterval(intervalHandler);
-    };
-  }, [assetId, assetStatus, query, offsetWellIds]);
+  const [gridHeight, setGridHeight] = useState(0);
 
   const axisContainerClass = classNames(classes.axisContainer, {
     [classes.axisContainerMobile]: appSize === 'phone',
@@ -153,7 +73,7 @@ function ChartTable(props) {
     <div className={classes.mainContentWrapper}>
       <div className={classes.mainContainer}>
         <div className={axisContainerClass}>
-          <SharedAxis zoom={zoom} appSize={appSize} />
+          <SharedAxis zoom={zoom} appSize={appSize} gridHeight={gridHeight} />
         </div>
         <div className={classes.wellsContainer}>
           {wellsData.map(wellData => (
@@ -165,6 +85,7 @@ function ChartTable(props) {
               maxDepth={maxDepth}
               zoom={zoom}
               appSize={appSize}
+              onChangeGridHeight={setGridHeight}
             />
           ))}
         </div>
@@ -174,11 +95,12 @@ function ChartTable(props) {
 }
 
 ChartTable.propTypes = {
-  well: PropTypes.shape({}).isRequired,
-  coordinates: PropTypes.shape({}).isRequired,
-  query: PropTypes.shape({}).isRequired,
-  currentUser: PropTypes.shape({}).isRequired,
-  selectedWellIds: PropTypes.shape([]).isRequired,
+  appSize: PropTypes.string.isRequired,
+  zoom: PropTypes.shape([]).isRequired,
+  wellsData: PropTypes.shape([]).isRequired,
+  hazardFilters: PropTypes.shape({}).isRequired,
+  formationsFilters: PropTypes.shape({}).isRequired,
+  maxDepth: PropTypes.number.isRequired,
 };
 
 export default memo(ChartTable);

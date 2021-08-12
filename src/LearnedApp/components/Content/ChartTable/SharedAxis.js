@@ -14,25 +14,25 @@ const margin = {
 };
 
 const SharedAxis = props => {
-  const { zoom } = props;
+  const { zoom, gridHeight } = props;
 
   const wrapperRef = useRef();
   const svgRef = useRef();
   const dimensions = useResizeObserver(wrapperRef);
 
   useEffect(() => {
-    if (!dimensions) {
+    if (!dimensions || gridHeight === 0) {
       return;
     }
 
-    const contentHeight = dimensions.height - margin.top - margin.bottom;
+    const contentHeight = gridHeight - margin.top - margin.bottom;
     const depthScale = scaleLinear()
       .domain(zoom ? [zoom[0], zoom[1]] : [0, 0])
-      .range([0, contentHeight]);
+      .range([0, gridHeight]);
 
     const svg = select(svgRef.current)
       .attr('width', dimensions.width)
-      .attr('height', dimensions.height)
+      .attr('height', gridHeight)
       .selectAll('g.c-wsc-content')
       .data(['content'])
       .join('g')
@@ -40,7 +40,7 @@ const SharedAxis = props => {
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
     renderDepthAxis(svg, depthScale, contentHeight);
-  }, [dimensions, zoom]);
+  }, [dimensions, zoom, gridHeight]);
 
   return (
     <div id="c-ws-shared-axis" ref={wrapperRef} style={{ width: '100%', height: '100%' }}>
@@ -51,6 +51,7 @@ const SharedAxis = props => {
 
 SharedAxis.propTypes = {
   zoom: arrayOf(number).isRequired,
+  gridHeight: number.isRequired,
 };
 
 export default memo(SharedAxis);

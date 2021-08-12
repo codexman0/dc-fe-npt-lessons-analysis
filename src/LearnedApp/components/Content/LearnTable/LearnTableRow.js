@@ -152,14 +152,14 @@ function formatWellName(wellName, showWellFullName) {
   if (showWellFullName) {
     return wellName;
   }
-  return wellName.length > 26 ? `${wellName.slice(0, 26)}...` : wellName;
+  return wellName && wellName.length > 26 ? `${wellName.slice(0, 26)}...` : wellName;
 }
 
 function formatWellNameTooltip(wellName, showWellFullName) {
   if (showWellFullName) {
     return '';
   }
-  return wellName.length > 26 ? wellName : '';
+  return wellName && wellName.length > 26 ? wellName : '';
 }
 
 const debouncedMouseEvent = debounce((data, cb) => cb(data), 500);

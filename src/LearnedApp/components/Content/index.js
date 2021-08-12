@@ -1,7 +1,8 @@
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import { makeStyles, TableContainer } from '@material-ui/core';
+import { LoadingIndicator } from '@corva/ui/components';
 
 import Header from './Header';
 import Settings from './Settings';
@@ -11,6 +12,23 @@ import WellsMap from './Map';
 import Legend from './Legend';
 import AppFooter from './AppFooter';
 import { TABLE_KIND } from '../../constants';
+
+// Well chart
+import { getAppSize } from './ChartTable/utils/responsive';
+import {
+  fetchWellsData,
+  fetchWellLiveData,
+  fetchNptPickList,
+  fetchLithologyPickList,
+} from './ChartTable/utils/apiCall';
+import {
+  getMaxDepth,
+  getInitHazardFilters,
+  getInitFormationFilters,
+  getInitZoom,
+  processWellsData,
+  injectLiveData,
+} from './ChartTable/utils/dataProcessing';
 
 const useStyles = makeStyles({
   contentWrapper: {
@@ -52,6 +70,12 @@ const useStyles = makeStyles({
       background: 'rgba(0, 0, 0, 0)',
     },
   },
+  loadingWrapper: {
+    position: 'relative',
+    flexGrow: 100,
+    display: 'flex',
+    alignItems: 'center',
+  },
   legendWrapper: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -65,6 +89,7 @@ const useStyles = makeStyles({
 function Content({
   isMobile,
   isDrawerOpen,
+  showChartView,
   eventKind,
   nptData,
   lessonsData,
@@ -76,19 +101,19 @@ function Content({
   offsetWells,
   tableSettings,
   showWellFullName,
+  onChangeShowChart,
   onChangeShowWellFullName,
   onChangeTableSettings,
   onShowTutorial,
   well,
   coordinates,
   query,
-  currentUser,
   offsetSetting,
 }) {
-  const [mapExpanded, setMapExpanded] = useState(true);
-  const [showChartView, setShowChartView] = useState(true);
-  const [isOpenSettingsPopover, setIsOpenSettingsPopover] = useState(false);
+  // NOTE: Fetch npt and lessons data
   const classes = useStyles({ isMobile });
+  const [mapExpanded, setMapExpanded] = useState(true);
+  const [isOpenSettingsPopover, setIsOpenSettingsPopover] = useState(false);
   const filteredData = useMemo(() => {
     const data = [];
     const startTimeStamp = new Date(dateFilter[0]).getTime() / 1000 || 0;
@@ -210,6 +235,70 @@ function Content({
     dateFilter,
   ]);
 
+  // NOTE: Fetch Well char data
+  const assetId = well && get(well, 'asset_id');
+  const assetStatus = well && get(well, 'status');
+  const offsetWellIds = useMemo(() => {
+    return get(offsetSetting, 'selectedWellIds') || [];
+  }, [offsetSetting]);
+  const appSize = getAppSize(coordinates, false);
+  const [isChartLoading, setIsChartLoading] = useState(false);
+  const [wellsData, setWellsData] = useState([]);
+  const [formationsFilters, setFormationsFilters] = useState({ on: true });
+  const [hazardFilters, setHazardFilters] = useState({ on: true });
+  const [maxDepth, setMaxDepth] = useState(null);
+  const [zoom, setZoom] = useState(null);
+
+  useEffect(() => {
+    if (!assetId) {
+      return;
+    }
+
+    const fetchData = async () => {
+      setIsChartLoading(true);
+      const [rawWellsData, nptPickList, lithologyPickList] = await Promise.all([
+        fetchWellsData(assetId, query, offsetWellIds),
+        fetchNptPickList(),
+        fetchLithologyPickList(),
+      ]);
+      const processedWellsData = processWellsData(rawWellsData, nptPickList, lithologyPickList);
+
+      const initialMaxDepth = getMaxDepth(processedWellsData);
+      const initialZoom = [0, initialMaxDepth];
+      // if hazard and/or formation filter is empty, fill with npt pick list
+      setHazardFilters(prev => getInitHazardFilters(prev, nptPickList));
+      setFormationsFilters(prev => getInitFormationFilters(prev, lithologyPickList));
+
+      setMaxDepth(initialMaxDepth);
+      setZoom(prev => getInitZoom(prev, initialZoom));
+      setWellsData(processedWellsData);
+      setIsChartLoading(false);
+    };
+
+    fetchData();
+
+    const fetchAndInjectLiveData = async () => {
+      if (query || assetStatus !== 'active') {
+        return;
+      }
+
+      const liveData = await fetchWellLiveData(assetId);
+      setWellsData(prev => {
+        const newData = injectLiveData(prev, liveData);
+        return newData;
+      });
+    };
+
+    const intervalHandler = setInterval(() => {
+      fetchAndInjectLiveData();
+    }, 30 * 1000); // Get the live data for every 30 seconds only for subject well
+
+    // eslint-disable-next-line consistent-return
+    return () => {
+      clearInterval(intervalHandler);
+    };
+  }, [assetId, assetStatus, query, offsetWellIds]);
+
   const handleMouseEvent = useCallback(newActiveWell => {
     console.log('activeWell=', newActiveWell);
   }, []);
@@ -238,7 +327,7 @@ function Content({
   };
 
   const handleChartTableView = useCallback(tab => {
-    setShowChartView(tab);
+    onChangeShowChart(tab);
   }, []);
 
   return (
@@ -279,15 +368,24 @@ function Content({
           />
         </TableContainer>
       ) : (
-        <div className={classes.tableWrapper}>
-          <ChartTable
-            well={well}
-            coordinates={coordinates}
-            query={query}
-            currentUser={currentUser}
-            selectedWellIds={get(offsetSetting, 'selectedWellIds')}
-          />
-        </div>
+        <>
+          {!isChartLoading ? (
+            <div className={classes.tableWrapper}>
+              <ChartTable
+                appSize={appSize}
+                zoom={zoom}
+                wellsData={wellsData}
+                formationsFilters={formationsFilters}
+                hazardFilters={hazardFilters}
+                maxDepth={maxDepth}
+              />
+            </div>
+          ) : (
+            <div className={classes.loadingWrapper}>
+              <LoadingIndicator />
+            </div>
+          )}
+        </>
       )}
       <div className={classes.legendWrapper}>
         <Legend records={filteredData} typeFilter={nptTypeFilter} />
@@ -304,6 +402,7 @@ Content.propTypes = {
   query: PropTypes.shape({}).isRequired,
   currentUser: PropTypes.shape({}).isRequired,
   isDrawerOpen: PropTypes.bool.isRequired,
+  showChartView: PropTypes.bool.isRequired,
   showWellFullName: PropTypes.bool.isRequired,
   onChangeShowWellFullName: PropTypes.func.isRequired,
   eventKind: PropTypes.number.isRequired,
@@ -316,6 +415,7 @@ Content.propTypes = {
   dateFilter: PropTypes.shape([]).isRequired,
   offsetWells: PropTypes.shape([]),
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
+  onChangeShowChart: PropTypes.func.isRequired,
   onChangeTableSettings: PropTypes.func.isRequired,
   onShowTutorial: PropTypes.func.isRequired,
   offsetSetting: PropTypes.shape({}).isRequired,

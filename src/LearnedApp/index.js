@@ -43,8 +43,8 @@ function LearnedApp(props) {
     well,
     coordinates,
     query,
-    currentUser,
     offsetSetting,
+    savedShowChart,
     savedEvent,
     savedNptTypeFilter,
     savedLessonsFilter,
@@ -67,6 +67,7 @@ function LearnedApp(props) {
   }, [well, offsetSetting]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
+  const [showChartView, setShowChartView] = useState(savedShowChart);
   const [eventKind, setEventKind] = useState(savedEvent);
   const [isNptLoading, nptData, nptTypeFilter, setNptTypeFilter] = useFetchNptData(
     offsetWellIds,
@@ -95,6 +96,7 @@ function LearnedApp(props) {
 
   // Save all the settings
   useSaveSettings(
+    showChartView,
     eventKind,
     nptTypeFilter,
     lessonsFilter,
@@ -185,6 +187,7 @@ function LearnedApp(props) {
             <Content
               isMobile={isMobile}
               isDrawerOpen={isDrawerOpen}
+              showChartView={showChartView}
               eventKind={eventKind}
               nptData={nptData}
               lessonsData={lessonsData}
@@ -197,12 +200,12 @@ function LearnedApp(props) {
               tableSettings={tableSettings}
               showWellFullName={showWellFullName}
               coordinates={coordinates}
+              onChangeShowChart={setShowChartView}
               onChangeShowWellFullName={handleChangeShowWellFullName}
               onChangeTableSettings={setTableSettings}
               onShowTutorial={handleShowTutorial}
               well={well}
               query={query}
-              currentUser={currentUser}
               offsetSetting={offsetSetting}
             />
           ) : (
@@ -236,13 +239,13 @@ LearnedApp.propTypes = {
     w: PropTypes.number.isRequired,
   }).isRequired,
   query: PropTypes.shape({}).isRequired,
-  currentUser: PropTypes.shape({}).isRequired,
   offsetSetting: PropTypes.shape({
     addedWellIds: PropTypes.shape([]).isRequired,
     bicWellIds: PropTypes.shape([]).isRequired,
     bicManualWellIds: PropTypes.shape([]).isRequired,
   }).isRequired,
   savedIsTutorialShown: PropTypes.bool,
+  savedShowChart: PropTypes.bool,
   savedEvent: PropTypes.number,
   savedNptTypeFilter: PropTypes.shape([]),
   savedLessonsFilter: PropTypes.shape([]),
@@ -255,6 +258,7 @@ LearnedApp.propTypes = {
 
 LearnedApp.defaultProps = {
   savedIsTutorialShown: DEFAULT_SETTINGS.savedIsTutorialShown,
+  savedShowChart: false,
   savedEvent: TABLE_KIND.npt,
   savedNptTypeFilter: [],
   savedLessonsFilter: [],

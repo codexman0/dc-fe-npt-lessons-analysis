@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { memo, useRef, useEffect } from 'react';
-import { arrayOf, shape, number } from 'prop-types';
+import { arrayOf, shape, number, func } from 'prop-types';
 import { select, scaleLinear } from 'd3';
 
 import { getLayersInfo } from './utils/responsive';
@@ -18,6 +18,7 @@ function WellChart(props) {
     hazardFilters,
     formationsFilters,
     zoom,
+    onChangeGridHeight,
   } = props;
 
   const svgRef = useRef();
@@ -34,8 +35,8 @@ function WellChart(props) {
       casingRightStartX,
     } = getLayersInfo(chartSize.width, chartSize.height, casingData, formationsFilters);
 
+    onChangeGridHeight(gridHeight);
     defineTooltip();
-
     const depthScale = scaleLinear().domain([zoom[0], zoom[1]]).range([0, gridHeight]);
     const xScale = scaleLinear().domain([0, 10]).range([0, gridWidth]);
 
@@ -109,6 +110,7 @@ WellChart.propTypes = {
   hazardFilters: shape({}).isRequired,
   formationsFilters: shape({}).isRequired,
   zoom: arrayOf(number).isRequired,
+  onChangeGridHeight: func.isRequired,
 };
 
 export default memo(WellChart);

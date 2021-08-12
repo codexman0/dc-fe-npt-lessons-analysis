@@ -259,6 +259,7 @@ const debouncedFunc = debounce(callback => {
 }, 1000);
 
 export const useSaveSettings = (
+  showChartView,
   eventKind,
   nptTypeFilter,
   lessonsFilter,
@@ -271,6 +272,7 @@ export const useSaveSettings = (
   const initialLoadingRef = useRef(true);
   const storeAppSettings = () => {
     onSettingsChange({
+      savedShowChart: showChartView,
       savedEvent: eventKind,
       savedNptTypeFilter: nptTypeFilter,
       savedLessonsFilter: lessonsFilter,
@@ -292,6 +294,7 @@ export const useSaveSettings = (
       initialLoadingRef.current = false;
     }
   }, [
+    showChartView,
     eventKind,
     nptTypeFilter,
     lessonsFilter,

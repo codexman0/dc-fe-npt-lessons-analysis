@@ -1,5 +1,5 @@
 import { memo, useState, useMemo, useRef, useCallback } from 'react';
-import { string, shape, arrayOf, number } from 'prop-types';
+import { string, shape, arrayOf, number, func } from 'prop-types';
 import { get } from 'lodash';
 import { makeStyles } from '@material-ui/core';
 
@@ -38,7 +38,7 @@ function WellContent(props) {
   const contentRef = useRef();
   const dimensions = useResizeObserver(contentRef);
 
-  const { wellData, hazardFilters, formationsFilters, zoom, appSize } = props;
+  const { wellData, hazardFilters, formationsFilters, zoom, appSize, onChangeGridHeight } = props;
 
   const {
     asset,
@@ -63,7 +63,6 @@ function WellContent(props) {
     return { width: dimensions.width, height: dimensions.height - 32 };
   }, [dimensions]);
   const [isWellInfoDialogOpen, setIsWellInfoDialogOpen] = useState(false);
-
   const handleToggleWellInfoDialog = useCallback(() => {
     setIsWellInfoDialogOpen(value => !value);
   }, []);
@@ -111,6 +110,7 @@ function WellContent(props) {
                 hazardFilters={hazardFilters}
                 formationsFilters={formationsFilters}
                 zoom={zoom}
+                onChangeGridHeight={onChangeGridHeight}
               />
             )}
           </div>
@@ -126,6 +126,7 @@ WellContent.propTypes = {
   appSize: string.isRequired,
   hazardFilters: shape({}).isRequired,
   formationsFilters: shape({}).isRequired,
+  onChangeGridHeight: func.isRequired,
 };
 
 export default memo(WellContent);
