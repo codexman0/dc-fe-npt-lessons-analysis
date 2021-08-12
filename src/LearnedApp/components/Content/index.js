@@ -15,19 +15,12 @@ import { TABLE_KIND } from '../../constants';
 
 // Well chart
 import { getAppSize } from './ChartTable/utils/responsive';
-import {
-  fetchWellsData,
-  fetchWellLiveData,
-  fetchNptPickList,
-  fetchLithologyPickList,
-} from './ChartTable/utils/apiCall';
+import { fetchWellsData, fetchNptPickList } from './ChartTable/utils/apiCall';
 import {
   getMaxDepth,
   getInitHazardFilters,
-  getInitFormationFilters,
   getInitZoom,
   processWellsData,
-  injectLiveData,
 } from './ChartTable/utils/dataProcessing';
 
 const useStyles = makeStyles({
@@ -107,7 +100,6 @@ function Content({
   onShowTutorial,
   well,
   coordinates,
-  query,
   offsetSetting,
 }) {
   // NOTE: Fetch npt and lessons data
@@ -244,7 +236,6 @@ function Content({
   const appSize = getAppSize(coordinates, false);
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [wellsData, setWellsData] = useState([]);
-  const [formationsFilters, setFormationsFilters] = useState({ on: true });
   const [hazardFilters, setHazardFilters] = useState({ on: true });
   const [maxDepth, setMaxDepth] = useState(null);
   const [zoom, setZoom] = useState(null);
@@ -256,18 +247,16 @@ function Content({
 
     const fetchData = async () => {
       setIsChartLoading(true);
-      const [rawWellsData, nptPickList, lithologyPickList] = await Promise.all([
-        fetchWellsData(assetId, query, offsetWellIds),
+      const [rawWellsData, nptPickList] = await Promise.all([
+        fetchWellsData(assetId, offsetWellIds),
         fetchNptPickList(),
-        fetchLithologyPickList(),
       ]);
-      const processedWellsData = processWellsData(rawWellsData, nptPickList, lithologyPickList);
+      const processedWellsData = processWellsData(rawWellsData, nptPickList);
 
       const initialMaxDepth = getMaxDepth(processedWellsData);
       const initialZoom = [0, initialMaxDepth];
       // if hazard and/or formation filter is empty, fill with npt pick list
       setHazardFilters(prev => getInitHazardFilters(prev, nptPickList));
-      setFormationsFilters(prev => getInitFormationFilters(prev, lithologyPickList));
 
       setMaxDepth(initialMaxDepth);
       setZoom(prev => getInitZoom(prev, initialZoom));
@@ -276,28 +265,7 @@ function Content({
     };
 
     fetchData();
-
-    const fetchAndInjectLiveData = async () => {
-      if (query || assetStatus !== 'active') {
-        return;
-      }
-
-      const liveData = await fetchWellLiveData(assetId);
-      setWellsData(prev => {
-        const newData = injectLiveData(prev, liveData);
-        return newData;
-      });
-    };
-
-    const intervalHandler = setInterval(() => {
-      fetchAndInjectLiveData();
-    }, 30 * 1000); // Get the live data for every 30 seconds only for subject well
-
-    // eslint-disable-next-line consistent-return
-    return () => {
-      clearInterval(intervalHandler);
-    };
-  }, [assetId, assetStatus, query, offsetWellIds]);
+  }, [assetId, assetStatus, offsetWellIds]);
 
   const handleMouseEvent = useCallback(newActiveWell => {
     console.log('activeWell=', newActiveWell);
@@ -375,7 +343,6 @@ function Content({
                 appSize={appSize}
                 zoom={zoom}
                 wellsData={wellsData}
-                formationsFilters={formationsFilters}
                 hazardFilters={hazardFilters}
                 maxDepth={maxDepth}
               />
@@ -399,7 +366,6 @@ Content.propTypes = {
   isMobile: PropTypes.bool.isRequired,
   well: PropTypes.shape({ id: PropTypes.number }).isRequired,
   coordinates: PropTypes.shape({}).isRequired,
-  query: PropTypes.shape({}).isRequired,
   currentUser: PropTypes.shape({}).isRequired,
   isDrawerOpen: PropTypes.bool.isRequired,
   showChartView: PropTypes.bool.isRequired,

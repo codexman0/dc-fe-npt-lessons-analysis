@@ -15,7 +15,7 @@ const useStyles = makeStyles({
   },
   wellNameContainer: {
     display: 'flex',
-    width: '100%',
+    width: 'calc(100% - 52px)',
   },
   wellName: {
     color: '#fff',

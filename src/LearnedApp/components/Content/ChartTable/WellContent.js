@@ -8,12 +8,13 @@ import { useResizeObserver } from './utils/effects';
 import WellHeader from './WellHeader';
 import WellChart from './WellChart';
 import WellInfoDialog from './dialog/WellInfoDialog';
+import NptEventDialog from './dialog/OneNptDialog';
 
 const useStyles = makeStyles({
   wellContainer: {
     height: '100%',
     width: '100%',
-    minWidth: ({ isNotDesktop }) => (isNotDesktop ? '100%' : '50%'),
+    minWidth: ({ isNotDesktop }) => (isNotDesktop ? '100%' : '33.34%'),
     paddingRight: ({ isNotDesktop }) => (isNotDesktop ? 0 : 20),
     display: 'flex',
     flexDirection: 'column',
@@ -37,40 +38,30 @@ const useStyles = makeStyles({
 function WellContent(props) {
   const contentRef = useRef();
   const dimensions = useResizeObserver(contentRef);
-
-  const { wellData, hazardFilters, formationsFilters, zoom, appSize, onChangeGridHeight } = props;
-
-  const {
-    asset,
-    casingData,
-    holeSectionData,
-    drillstringData,
-    witData,
-    planSurveyData,
-    actualMudData,
-    planMudData,
-    nptData,
-    directionalData,
-    formationsData,
-    phaseData,
-  } = wellData;
-
+  const { wellData, hazardFilters, zoom, appSize, onChangeGridHeight } = props;
+  const { asset, casingData, planSurveyData, nptData } = wellData;
   const classes = useStyles({ isNotDesktop: appSize !== 'desktop' });
-
   const assetId = get(asset, ['data', 'id']);
   const chartSize = useMemo(() => {
     if (!dimensions) return null;
     return { width: dimensions.width, height: dimensions.height - 32 };
   }, [dimensions]);
   const [isWellInfoDialogOpen, setIsWellInfoDialogOpen] = useState(false);
+  const [nptIndex, setNptIndex] = useState(-1);
+
   const handleToggleWellInfoDialog = useCallback(() => {
     setIsWellInfoDialogOpen(value => !value);
   }, []);
 
-  const isDataEmpty =
-    wellData.holeSectionData.length < 1 ||
-    wellData.casingData.length < 1 ||
-    wellData.drillstringData.length < 1;
+  const handleOpenNptEventDialog = useCallback(index => {
+    setNptIndex(index);
+  }, []);
+
+  const handleCloseNptEventDialog = useCallback(() => {
+    setNptIndex(-1);
+  }, []);
+
+  const isDataEmpty = wellData.casingData.length < 1;
 
   return (
     <div className={classes.wellContainer}>
@@ -81,6 +72,10 @@ function WellContent(props) {
           asset={asset}
           wellData={planSurveyData}
         />
+
+        {nptIndex !== -1 && (
+          <NptEventDialog nptEvent={nptData[nptIndex]} onClose={handleCloseNptEventDialog} />
+        )}
 
         {chartSize && (
           <div id={`c-ws-well-header-${assetId}`} className={classes.wellHeader}>
@@ -97,20 +92,12 @@ function WellContent(props) {
               <WellChart
                 assetId={+assetId}
                 chartSize={chartSize}
-                witData={witData}
                 casingData={casingData}
-                holeSectionData={holeSectionData}
-                drillstringData={drillstringData}
-                actualMudData={actualMudData}
-                planMudData={planMudData}
-                nptData={nptData}
-                directionalData={directionalData}
-                formationsData={formationsData}
-                phaseData={phaseData}
                 hazardFilters={hazardFilters}
-                formationsFilters={formationsFilters}
                 zoom={zoom}
+                nptData={nptData}
                 onChangeGridHeight={onChangeGridHeight}
+                onClickHazard={handleOpenNptEventDialog}
               />
             )}
           </div>
@@ -125,7 +112,6 @@ WellContent.propTypes = {
   zoom: arrayOf(number).isRequired,
   appSize: string.isRequired,
   hazardFilters: shape({}).isRequired,
-  formationsFilters: shape({}).isRequired,
   onChangeGridHeight: func.isRequired,
 };
 

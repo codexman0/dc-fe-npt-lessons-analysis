@@ -70,8 +70,8 @@ export const getLayersInfo = (containerWidth, containerHeight, casingData) => {
     casingLeftEndX,
     casingRightStartX,
     casingRightEndX,
-    hazardStartX,
     casingWidth,
+    hazardStartX,
     hazardSize,
   };
 };

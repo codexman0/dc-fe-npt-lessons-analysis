@@ -61,7 +61,7 @@ const useStyles = makeStyles({
   },
 });
 
-function ChartTable({ appSize, zoom, wellsData, formationsFilters, hazardFilters, maxDepth }) {
+function ChartTable({ appSize, zoom, wellsData, hazardFilters, maxDepth }) {
   const classes = useStyles();
   const [gridHeight, setGridHeight] = useState(0);
 
@@ -80,7 +80,6 @@ function ChartTable({ appSize, zoom, wellsData, formationsFilters, hazardFilters
             <WellContent
               key={wellData.assetId}
               wellData={wellData}
-              formationsFilters={formationsFilters}
               hazardFilters={hazardFilters}
               maxDepth={maxDepth}
               zoom={zoom}
@@ -99,7 +98,6 @@ ChartTable.propTypes = {
   zoom: PropTypes.shape([]).isRequired,
   wellsData: PropTypes.shape([]).isRequired,
   hazardFilters: PropTypes.shape({}).isRequired,
-  formationsFilters: PropTypes.shape({}).isRequired,
   maxDepth: PropTypes.number.isRequired,
 };
 

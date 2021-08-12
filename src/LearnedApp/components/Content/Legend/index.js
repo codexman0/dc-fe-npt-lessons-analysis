@@ -8,6 +8,7 @@ import LegendItem from './LegendItem';
 const useStyles = makeStyles({
   container: {
     display: 'flex',
+    width: '100%',
     justifyContent: 'space-between',
     padding: '20px 10px 5px 10px',
     flexWrap: 'nowrap',
@@ -15,9 +16,11 @@ const useStyles = makeStyles({
   },
   legendGroup: {
     display: 'flex',
+    width: '100%',
     flexWrap: 'nowrap',
     alignItems: 'center',
     marginRight: '24px',
+    justifyContent: 'center',
   },
 });
 

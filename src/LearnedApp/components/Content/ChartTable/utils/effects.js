@@ -28,7 +28,6 @@ export const useResizeObserver = ref => {
 
     const resizeObserver = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
-
       setDimensions({ width, height });
     });
 

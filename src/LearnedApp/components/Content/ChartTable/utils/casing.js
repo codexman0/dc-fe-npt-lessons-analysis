@@ -1,4 +1,30 @@
-/* eslint-disable no-underscore-dangle */
+import { get } from 'lodash';
+
+export const renderSectionFill = (
+  parentElem,
+  depthScale,
+  casingData,
+  casingLeftStart,
+  casingRightStart,
+  casingWidth,
+) => {
+  const data = casingData && casingData.length > 0 ? casingData[casingData.length - 1] : [];
+  const left = casingLeftStart + (casingData ? casingData.length : 0) * casingWidth;
+  const height = depthScale(data.data.bottom_depth);
+  const width = casingRightStart - left;
+
+  parentElem
+    .selectAll('rect.c-wsc-casing-middle-fill')
+    .data(casingData)
+    .join('rect')
+    .attr('class', 'c-wsc-casing-middle-fill')
+    .attr('x', left)
+    .attr('y', 0)
+    .attr('width', width)
+    .attr('height', height)
+    .attr('fill', 'rgba(255,255,255, .04)');
+};
+
 export const renderLeftCasings = (
   parentElem,
   depthScale,
@@ -41,7 +67,7 @@ export const renderLeftCasings = (
     .selectAll('line.c-wsc-casing-left-stroke')
     .data(isVisible ? casingData : [])
     .join('line')
-    .attr('class', d => `c-wsc-casing-left-stroke c-wsc-casing-stroke-${d._id}`)
+    .attr('class', d => `c-wsc-casing-left-stroke c-wsc-casing-stroke-${get(d, '_id')}`)
     .attr('x1', (d, idx) => {
       return casingLeftStart + (idx + 1) * casingWidth;
     })
@@ -62,7 +88,6 @@ export const renderRightCasings = (
   isVisible
 ) => {
   const casingDataReversed = !isVisible ? [] : [...casingData].reverse();
-
   parentElem
     .selectAll('rect.c-wsc-casing-right-fill')
     .data(casingDataReversed)
@@ -80,8 +105,8 @@ export const renderRightCasings = (
     .selectAll('line.c-wsc-casing-right-stroke')
     .data(casingDataReversed)
     .join('line')
-    .attr('id', d => `c-wsc-casing-right-stroke-${d._id}`)
-    .attr('class', d => `c-wsc-casing-right-stroke c-wsc-casing-stroke-${d._id}`)
+    .attr('id', d => `c-wsc-casing-right-stroke-${get(d, '_id')}`)
+    .attr('class', d => `c-wsc-casing-right-stroke c-wsc-casing-stroke-${get(d, '_id')}`)
     .attr('x1', (d, idx) => {
       return casingRightStart + idx * casingWidth;
     })
@@ -97,7 +122,7 @@ export const renderRightCasings = (
     .data(casingDataReversed)
     .join('polygon')
     .attr('class', 'c-wsc-casing-right-shoe')
-    .attr('id', d => `c-wsc-casing-right-shoe-${d._id}`)
+    .attr('id', d => `c-wsc-casing-right-shoe-${get(d, '_id')}`)
     .attr('points', (d, idx) => {
       const x1 = casingRightStart + idx * casingWidth;
       const y1 = depthScale(d.data.bottom_depth);

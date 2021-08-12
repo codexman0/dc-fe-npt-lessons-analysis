@@ -19,23 +19,6 @@ export const getInitHazardFilters = (initFilter, nptPickList) => {
   };
 };
 
-export const getInitFormationFilters = (initFilter, lithologyPickList) => {
-  if (initFilter.settings) {
-    return initFilter;
-  }
-
-  return {
-    ...initFilter,
-    settings: {
-      ...lithologyPickList,
-      showLithology: {
-        on: true,
-        displayName: 'Lithology',
-      },
-    },
-  };
-};
-
 export const getMaxDepth = wellsData => {
   const lengthUnit = getUnitDisplay('length');
   const maxDepth = wellsData.reduce((result, { holeSectionData, casingData }) => {
@@ -87,71 +70,12 @@ function getFilteredNptData(wellData, nptPickList) {
   return newNptData;
 }
 
-// Note: formalize the depth information to match with other collection data strcuture
-function getRevisedFormationsData(wellData) {
-  const { formationsData } = wellData;
-
-  const newFormationsData = [];
-  formationsData.forEach((formation, index) => {
-    const nextFormation = formationsData[index + 1];
-
-    const endDepth = nextFormation ? nextFormation.data.md : 0;
-    const endDepthTvd = nextFormation ? nextFormation.data.td : 0;
-
-    newFormationsData.push({
-      ...formation,
-      data: {
-        ...formation.data,
-        start_depth: formation.data.md,
-        start_depth_tvd: formation.data.td,
-        end_depth: endDepth,
-        end_depth_tvd: endDepthTvd,
-      },
-    });
-  });
-
-  return newFormationsData;
-}
-
-function getDirectionalData(wellData) {
-  const {
-    planSurveyData: { stations },
-  } = wellData;
-
-  if (!stations || !stations.length) {
-    return [];
-  }
-
-  const firstStation = stations[0];
-  const lastStation = stations[stations.length - 1];
-  const beginCriticalPoint = {
-    ...firstStation,
-    critical_point: 'Beginning of well',
-  };
-
-  const lastCriticalPoint = {
-    ...lastStation,
-    critical_point: 'End of well',
-  };
-
-  const criticalPoints = stations.filter(station => station.critical_point);
-
-  const directionData = [beginCriticalPoint, ...criticalPoints, lastCriticalPoint];
-
-  return directionData;
-}
-
 export const processWellsData = (rawWellsData, nptPickList) => {
   const wellsData = rawWellsData.map(wellData => {
     const nptData = getFilteredNptData(wellData, nptPickList);
-    const formationsData = getRevisedFormationsData(wellData);
-    const directionalData = getDirectionalData(wellData);
-
     return {
       ...wellData,
       nptData,
-      formationsData,
-      directionalData,
     };
   });
 
@@ -174,23 +98,55 @@ export const processWellsData = (rawWellsData, nptPickList) => {
   ];
 };
 
-export const injectLiveData = (wellsData, liveWellData) => {
-  return wellsData.map(wellData => {
-    if (wellData.assetId !== liveWellData.assetId || liveWellData.hasError) {
-      return wellData;
-    }
-
-    return {
-      ...wellData,
-      witData: liveWellData.witData,
-      phaseData: liveWellData.phaseData,
-    };
-  });
-};
-
 export function getInitZoom(prevZoom, defaultZoom) {
   if (prevZoom && prevZoom[1] < defaultZoom[1]) {
     return prevZoom;
   }
   return defaultZoom;
 }
+
+export const getHazardGroups = (assetId, nptData, hazardFilters, zoom) => {
+  if (!hazardFilters.on) {
+    return [];
+  }
+
+  const groupSize = (zoom[1] - zoom[0]) / 100;
+  const hazards = [];
+  nptData.forEach(npt => {
+    const shouldIncludeOffsetWells = hazardFilters.settings.offsetWellHazards.on;
+    const isOn = hazardFilters.settings[npt.data.type].on;
+    const isInDepthRange = npt.data.depth >= zoom[0] && npt.data.depth <= zoom[1];
+
+    if (
+      (shouldIncludeOffsetWells || (!shouldIncludeOffsetWells && npt.asset_id === assetId)) &&
+      isOn &&
+      isInDepthRange
+    ) {
+      hazards.push({
+        id: npt._id,
+        type: npt.data.type,
+        depth: npt.data.depth,
+        color: hazardFilters.settings[npt.data.type].color,
+      });
+    }
+  });
+
+  const groups = [];
+  hazards.forEach(hazard => {
+    const lastGroup = groups.length ? groups[groups.length - 1] : null;
+
+    if (lastGroup && hazard.depth - lastGroup.depth <= groupSize) {
+      // update last group
+      lastGroup.hazards.push(hazard);
+    } else {
+      // create new group
+      const newGroup = {
+        depth: hazard.depth,
+        hazards: [hazard],
+      };
+      groups.push(newGroup);
+    }
+  });
+
+  return groups;
+};

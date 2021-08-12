@@ -39,72 +39,6 @@ export function convertHoleSectionData(sectionData = []) {
   });
 }
 
-export function convertWitData(witData) {
-  const { data } = witData;
-
-  return {
-    ...witData,
-    data: {
-      ...data,
-      bit_depth: convertValue(data.bit_depth, 'length', 'ft'),
-      bit_depth_tvd: convertValue(data.bit_depth_tvd, 'length', 'ft'),
-      hole_depth: convertValue(data.hole_depth, 'length', 'ft'),
-      hole_depth_tvd: convertValue(data.hole_depth_tvd, 'length', 'ft'),
-    },
-  };
-}
-
-export function convertActualMudData(actualMudData = []) {
-  return actualMudData.map(mud => {
-    const { data } = mud;
-
-    return {
-      ...mud,
-      data: {
-        ...data,
-        depth: convertValue(data.depth, 'length', 'ft'),
-        depth_tvd: convertValue(data.depth_tvd, 'length', 'ft'),
-        mud_density: convertValue(data.mud_density, 'density', 'ppg'),
-        viscosity: {
-          ...data.viscosity,
-          yp: convertValue(data.viscosity.yp, 'yp', 'hsf'),
-        },
-      },
-    };
-  });
-}
-
-export function convertPlanMudData(planMudData = []) {
-  return planMudData.map(mud => {
-    const { data } = mud;
-
-    return {
-      ...mud,
-      data: {
-        ...data,
-        depth: convertValue(data.depth, 'length', 'ft'),
-        depth_tvd: convertValue(data.depth_tvd, 'length', 'ft'),
-        mud_density: convertValue(data.mud_density, 'density', 'ppg'),
-      },
-    };
-  });
-}
-
-export function convertFormationsData(formationsData = []) {
-  return formationsData.map(formation => {
-    const { data } = formation;
-
-    return {
-      ...formation,
-      data: {
-        ...data,
-        md: convertValue(data.md, 'length', 'ft'),
-        td: convertValue(data.td, 'length', 'ft'),
-      },
-    };
-  });
-}
-
 export function convertNptData(nptData = []) {
   return nptData.map(npt => {
     const { data } = npt;
@@ -288,78 +222,6 @@ export function convertDrillstringData(drillstringData = []) {
   return drillstringData.map(drillstring => convertDrillstringRecord(drillstring));
 }
 
-export function convertRoadmapData(roadmapData) {
-  if (!roadmapData || !roadmapData.data) {
-    return roadmapData;
-  }
-
-  const formations = roadmapData.data.formations.map(formation => {
-    const from = {
-      rpm: formation.from.rpm,
-      wob: convertValue(formation.from.wob, 'force', 'klbf'),
-    };
-
-    const to = {
-      rpm: formation.to.rpm,
-      wob: convertValue(formation.to.wob, 'force', 'klbf'),
-    };
-
-    return {
-      ...formation,
-      md_start: convertValue(formation.md_start, 'length', 'ft'),
-      md_end: convertValue(formation.md_end, 'length', 'ft'),
-      tvd_start: convertValue(formation.tvd_start, 'length', 'ft'),
-      tvd_end: convertValue(formation.tvd_end, 'length', 'ft'),
-      from,
-      to,
-      diff_press: convertValue(formation.diff_press, 'pressure', 'psi'),
-      mse: convertValue(formation.mse, 'msePressure', 'psi'),
-      rop: convertValue(formation.rop, 'velocity', 'ft/h'),
-      flow_in: convertValue(formation.flow_in, 'volumeFlowRate', 'gal/min'),
-      mud_density: convertValue(formation.mud_density, 'density', 'ppg'),
-    };
-  });
-
-  return {
-    ...roadmapData,
-    data: {
-      ...roadmapData.data,
-      formations,
-    },
-  };
-}
-
-export function convertScoringData(scoringData) {
-  if (!scoringData || !scoringData.data) {
-    return scoringData;
-  }
-
-  const scoring = scoringData.data.scoring.map(item => {
-    const diffPressActual = (item.diff_press || {}).actual;
-    const flowInActual = (item.flow_in || {}).actual;
-    const wobActual = (item.wob || {}).actual;
-    const ropActual = (item.rop || {}).actual;
-    const mseActual = (item.mse || {}).actual;
-
-    return {
-      ...item,
-      wob: { actual: convertValue(wobActual, 'force', 'klbf') },
-      mse: { actual: convertValue(mseActual, 'msePressure', 'psi') },
-      diff_press: { actual: convertValue(diffPressActual, 'pressure', 'psi') },
-      rop: { actual: convertValue(ropActual, 'velocity', 'ft/h') },
-      flow_in: { actual: convertValue(flowInActual, 'volumeFlowRate', 'gal/min') },
-    };
-  });
-
-  return {
-    ...scoringData,
-    data: {
-      ...scoringData.data,
-      scoring,
-    },
-  };
-}
-
 export function convertPlanSurveyData(planSurveyData) {
   if (!planSurveyData) {
     return planSurveyData;
@@ -389,29 +251,17 @@ export const getConvertedWellData = wellData => {
   const {
     casingData,
     holeSectionData,
-    witData,
-    actualMudData,
-    planMudData,
-    formationsData,
     nptData,
     planSurveyData,
     drillstringData,
-    roadmapData,
-    scoringData,
   } = wellData;
 
   return {
     ...wellData,
     casingData: convertCasingData(casingData),
     holeSectionData: convertHoleSectionData(holeSectionData),
-    witData: convertWitData(witData),
-    actualMudData: convertActualMudData(actualMudData),
-    planMudData: convertPlanMudData(planMudData),
-    formationsData: convertFormationsData(formationsData),
     nptData: convertNptData(nptData),
     drillstringData: convertDrillstringData(drillstringData),
-    roadmapData: convertRoadmapData(roadmapData),
-    scoringData: convertScoringData(scoringData),
     planSurveyData: convertPlanSurveyData(planSurveyData),
   };
 };

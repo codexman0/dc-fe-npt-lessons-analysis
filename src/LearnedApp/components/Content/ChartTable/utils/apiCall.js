@@ -1,4 +1,4 @@
-import { get, set } from 'lodash'; // song
+import { get, set } from 'lodash';
 import {
   getAppStorage,
   getPicklist,
@@ -8,7 +8,6 @@ import {
 } from '@corva/ui/clients/jsonApi';
 
 import { METADATA } from './meta';
-import { getWellDataWithTvd } from './tvd';
 import { getConvertedWellData } from './conversion';
 
 export async function fetchNptPickList() {
@@ -37,29 +36,6 @@ export async function fetchNptPickList() {
         },
       };
     }, {});
-}
-
-export async function fetchLithologyPickList() {
-  let res;
-  try {
-    res = await getPicklist('formation_lithology');
-  } catch (e) {
-    return [];
-  }
-
-  return res.items.reduce((result, lithology) => {
-    const name = get(lithology, ['name']);
-    const color = get(lithology, ['metadata', name]);
-
-    return {
-      ...result,
-      [name]: {
-        on: true, // used by granular filter settings
-        displayName: name,
-        color,
-      },
-    };
-  }, {});
 }
 
 export async function fetchAsset(assetId) {
@@ -106,96 +82,39 @@ export async function fetchAsset(assetId) {
   return asset;
 }
 
-export async function fetchWellData(assetId, query) {
+export async function fetchWellData(assetId) {
   let asset;
   let casingData;
   let holeSectionData;
   let drillstringData;
-  let witData;
-  let actualMudData;
-  let planMudData;
   let planSurveyData;
-  let actualSurveyData;
-  let formationsData;
   let nptData;
-  let phaseData;
-  let roadmapData;
-  let scoringData;
 
   try {
-    [
-      asset,
-      casingData,
-      holeSectionData,
-      drillstringData,
-      witData,
-      actualMudData,
-      planMudData,
-      planSurveyData,
-      actualSurveyData,
-      formationsData,
-      nptData,
-      phaseData,
-      roadmapData,
-      scoringData,
-    ] = await Promise.all([
-      fetchAsset(assetId),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.casings, assetId, {
-        limit: 1000,
-        sort: '{data.bottom_depth: 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.holeSection, assetId, {
-        limit: 1000,
-        sort: '{data.top_depth: 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.drillstring, assetId, {
-        limit: 1000,
-        sort: '{data.start_depth: 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.wits, assetId, {
-        query,
-        limit: 1,
-        sort: '{timestamp: -1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.mud, assetId, {
-        limit: 1000,
-        sort: '{data.depth  : 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.mudPlan, assetId, {
-        limit: 1000,
-        sort: '{data.depth  : 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.planSurvey, assetId, {
-        limit: 1,
-        sort: '{timestamp:-1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.actualSurvey, assetId, {
-        limit: 1,
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.formations, assetId, {
-        limit: 1000,
-        sort: '{data.md: 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.nptEvents, assetId, {
-        limit: 1000,
-        sort: '{data.depth: 1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.wellPhases, assetId, {
-        limit: 1,
-        query,
-        sort: '{timestamp: -1}',
-      }),
-      getAppStorage(METADATA.provider, 'drilling-roadmap', assetId, {
-        limit: 1,
-        query,
-        sort: '{timestamp: -1}',
-      }),
-      getAppStorage(METADATA.provider, 'drilling-roadmap.scoring', assetId, {
-        limit: 1,
-        query,
-        sort: '{timestamp: -1}',
-      }),
-    ]);
+    [asset, casingData, holeSectionData, drillstringData, planSurveyData, nptData] =
+      await Promise.all([
+        fetchAsset(assetId),
+        getAppStorage(METADATA.provider, METADATA.recordCollections.casings, assetId, {
+          limit: 1000,
+          sort: '{data.bottom_depth: 1}',
+        }),
+        getAppStorage(METADATA.provider, METADATA.recordCollections.holeSection, assetId, {
+          limit: 1000,
+          sort: '{data.top_depth: 1}',
+        }),
+        getAppStorage(METADATA.provider, METADATA.recordCollections.drillstring, assetId, {
+          limit: 1000,
+          sort: '{data.start_depth: 1}',
+        }),
+        getAppStorage(METADATA.provider, METADATA.recordCollections.planSurvey, assetId, {
+          limit: 1,
+          sort: '{timestamp:-1}',
+        }),
+        getAppStorage(METADATA.provider, METADATA.recordCollections.nptEvents, assetId, {
+          limit: 1000,
+          sort: '{data.depth: 1}',
+        }),
+      ]);
 
     // filtering out rig move/skid
     holeSectionData = holeSectionData.filter(
@@ -206,25 +125,6 @@ export async function fetchWellData(assetId, query) {
     drillstringData = drillstringData.filter(
       drillstring => !drillstring.data.id.toString().includes('.')
     );
-
-    // plan and actual mud data have different data structure
-    // This will unify the mud data from two different collections
-    planMudData = planMudData.length
-      ? planMudData[0].data.records.map(data => {
-          return { data };
-        })
-      : [];
-
-    // filter out the formation that doesn't have measure depth
-    formationsData = formationsData.filter(formation => Number.isFinite(formation.data.md));
-
-    witData = witData.length ? witData[0] : {};
-
-    phaseData = phaseData.length ? phaseData[0] : {};
-
-    roadmapData = roadmapData.length ? roadmapData[0] : {};
-
-    scoringData = scoringData.length ? scoringData[0] : {};
   } catch (e) {
     console.error(e);
     return {
@@ -233,16 +133,8 @@ export async function fetchWellData(assetId, query) {
       casingData: [],
       holeSectionData: [],
       drillstringData: [],
-      witData: {},
-      actualMudData: [],
-      planMudData: [],
       planSurveyData: {},
-      actualSurveyData: {},
-      formationsData: [],
       nptData: [],
-      phaseData: {},
-      roadmapData: {},
-      scoringData: {},
     };
   }
 
@@ -252,25 +144,16 @@ export async function fetchWellData(assetId, query) {
     casingData,
     holeSectionData,
     drillstringData,
-    witData,
-    actualMudData,
-    planMudData,
     planSurveyData: planSurveyData.length ? planSurveyData[0].data : {},
-    actualSurveyData: actualSurveyData.length ? actualSurveyData[0].data : {},
-    formationsData,
     nptData,
-    phaseData,
-    roadmapData,
-    scoringData,
   };
 
-  const wellDataWithTvd = await getWellDataWithTvd(wellData);
-  const convertedWellData = getConvertedWellData(wellDataWithTvd);
+  const convertedWellData = getConvertedWellData(wellData);
 
   return convertedWellData;
 }
 
-export async function fetchWellsData(subjectAssetId, query, offsetWells) {
+export async function fetchWellsData(subjectAssetId, offsetWells) {
   const wellIds = offsetWells.reduce(
     (result, offsetWell) => {
       const wellId = offsetWell;
@@ -283,52 +166,7 @@ export async function fetchWellsData(subjectAssetId, query, offsetWells) {
     [subjectAssetId]
   );
 
-  const rawWellsData = await Promise.all(
-    wellIds.map(wellId => fetchWellData(wellId, subjectAssetId === wellId ? query : null))
-  );
+  const rawWellsData = await Promise.all(wellIds.map(wellId => fetchWellData(wellId)));
 
   return rawWellsData;
-}
-
-export async function fetchWellLiveData(assetId) {
-  let witData;
-  let phaseData;
-  let actualSurveyData;
-
-  try {
-    [witData, phaseData, actualSurveyData] = await Promise.all([
-      getAppStorage(METADATA.provider, METADATA.recordCollections.wits, assetId, {
-        limit: 1,
-        sort: '{timestamp: -1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.wellPhases, assetId, {
-        limit: 1,
-        sort: '{timestamp: -1}',
-      }),
-      getAppStorage(METADATA.provider, METADATA.recordCollections.actualSurvey, assetId, {
-        limit: 1,
-      }),
-    ]);
-
-    witData = witData.length ? witData[0] : {};
-    phaseData = phaseData.length ? phaseData[0] : {};
-    actualSurveyData = actualSurveyData.length ? actualSurveyData[0].data : {};
-  } catch (e) {
-    return {
-      assetId,
-      hasError: true,
-    };
-  }
-
-  const wellData = {
-    assetId,
-    witData,
-    phaseData,
-    actualSurveyData,
-  };
-
-  const wellDataWithTvd = await getWellDataWithTvd(wellData);
-  const convertedWellData = getConvertedWellData(wellDataWithTvd);
-
-  return convertedWellData;
 }

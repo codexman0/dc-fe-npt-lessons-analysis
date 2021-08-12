@@ -1,14 +1,16 @@
 /* eslint-disable no-underscore-dangle */
-import { memo, useRef, useEffect } from 'react';
+import { memo, useRef, useEffect, useCallback } from 'react';
 import { arrayOf, shape, number, func } from 'prop-types';
 import { select, scaleLinear } from 'd3';
 
+import { getHazardGroups } from './utils/dataProcessing';
 import { getLayersInfo } from './utils/responsive';
 import { defineClip } from './utils/defs';
 import { defineTooltip } from './utils/tooltip';
 
 import { renderXGrid, renderYGrid } from './utils/axis';
-import { renderLeftCasings, renderRightCasings } from './utils/casing';
+import { renderLeftCasings, renderRightCasings, renderSectionFill } from './utils/casing';
+import { renderHazards } from './utils/hazard';
 
 function WellChart(props) {
   const {
@@ -16,16 +18,22 @@ function WellChart(props) {
     chartSize,
     casingData,
     hazardFilters,
-    formationsFilters,
     zoom,
+    nptData,
     onChangeGridHeight,
+    onClickHazard,
   } = props;
-
   const svgRef = useRef();
+
+  const handleClickHazard = useCallback(
+    id => {
+      onClickHazard(nptData.findIndex(item => item._id === id));
+    },
+    [onClickHazard, nptData]
+  );
 
   useEffect(() => {
     const {
-      isMinimized,
       gridWidth,
       gridHeight,
       marginLeft,
@@ -33,12 +41,15 @@ function WellChart(props) {
       casingWidth,
       casingLeftStartX,
       casingRightStartX,
-    } = getLayersInfo(chartSize.width, chartSize.height, casingData, formationsFilters);
+      hazardStartX,
+      hazardSize,
+    } = getLayersInfo(chartSize.width, chartSize.height, casingData);
 
     onChangeGridHeight(gridHeight);
     defineTooltip();
     const depthScale = scaleLinear().domain([zoom[0], zoom[1]]).range([0, gridHeight]);
     const xScale = scaleLinear().domain([0, 10]).range([0, gridWidth]);
+    const hazardGroups = getHazardGroups(assetId, nptData, hazardFilters, zoom);
 
     const svg = select(svgRef.current)
       .attr('width', chartSize.width)
@@ -63,16 +74,28 @@ function WellChart(props) {
     renderYGrid(axes, depthScale, gridWidth);
     renderXGrid(axes, xScale, gridHeight);
 
+    renderSectionFill(
+      grid,
+      depthScale,
+      casingData,
+      casingLeftStartX,
+      casingRightStartX,
+      casingWidth
+    );
     renderLeftCasings(grid, depthScale, casingData, casingLeftStartX, casingWidth, true);
-    renderRightCasings(grid, depthScale, casingData, casingRightStartX, casingWidth, !isMinimized);
-  }, [
-    assetId,
-    chartSize,
-    casingData,
-    hazardFilters,
-    formationsFilters,
-    zoom,
-  ]);
+    renderRightCasings(grid, depthScale, casingData, casingRightStartX, casingWidth, true);
+
+    const gradientPatternId = `multiHazardPattern${assetId}`;
+    renderHazards(
+      grid,
+      depthScale,
+      hazardStartX,
+      hazardSize,
+      hazardGroups,
+      gradientPatternId,
+      handleClickHazard
+    );
+  }, [assetId, chartSize, casingData, hazardFilters, zoom]);
 
   return (
     <svg ref={svgRef} style={{ width: '100%', height: '100%' }}>
@@ -108,9 +131,10 @@ WellChart.propTypes = {
   }).isRequired,
   casingData: arrayOf(shape({})).isRequired,
   hazardFilters: shape({}).isRequired,
-  formationsFilters: shape({}).isRequired,
   zoom: arrayOf(number).isRequired,
+  nptData: arrayOf(shape({})).isRequired,
   onChangeGridHeight: func.isRequired,
+  onClickHazard: func.isRequired,
 };
 
 export default memo(WellChart);
