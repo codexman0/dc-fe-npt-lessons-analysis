@@ -42,6 +42,8 @@ function LearnedApp(props) {
   const {
     well,
     coordinates,
+    query,
+    currentUser,
     offsetSetting,
     savedEvent,
     savedNptTypeFilter,
@@ -51,10 +53,8 @@ function LearnedApp(props) {
     savedDateFilter,
     savedIsTutorialShown,
     savedTableSettings,
-    savedChartExpanded,
     onSettingsChange,
   } = props;
-
   const classes = useStyles();
   const isMobile = isMobileDetected || isNativeDetected || coordinates.w <= 3;
   const offsetWellIds = useMemo(() => {
@@ -84,7 +84,6 @@ function LearnedApp(props) {
   ] = useFetchLessonsData(offsetWellIds, savedLessonsFilter, savedOpFilter, savedDepthFilter);
   const [dateFilter, setDateFilter] = useState(savedDateFilter);
   const [tableSettings, setTableSettings] = useState(savedTableSettings);
-  const [chartExpanded, setChartExpanded] = useState(savedChartExpanded);
   const [showTutorial, setShowTutorial] = useState(!savedIsTutorialShown);
   const [showWellFullName, setShowWellFullName] = useState(false);
 
@@ -103,7 +102,6 @@ function LearnedApp(props) {
     depthFilter,
     dateFilter,
     tableSettings,
-    chartExpanded,
     onSettingsChange
   );
 
@@ -133,12 +131,7 @@ function LearnedApp(props) {
       },
     });
     setDateFilter([]);
-    console.log('clear');
   };
-
-  const handleChangeChartExpanded = useCallback(() => {
-    setChartExpanded(prev => !prev);
-  }, []);
 
   const handleSkipTutorial = useCallback(() => {
     setShowTutorial(false);
@@ -202,12 +195,15 @@ function LearnedApp(props) {
               dateFilter={dateFilter}
               offsetWells={initialData?.wells}
               tableSettings={tableSettings}
-              chartExpanded={chartExpanded}
               showWellFullName={showWellFullName}
+              coordinates={coordinates}
               onChangeShowWellFullName={handleChangeShowWellFullName}
               onChangeTableSettings={setTableSettings}
-              onChangeChartExpanded={handleChangeChartExpanded}
               onShowTutorial={handleShowTutorial}
+              well={well}
+              query={query}
+              currentUser={currentUser}
+              offsetSetting={offsetSetting}
             />
           ) : (
             <div className={classes.loadingWrapper}>
@@ -239,6 +235,8 @@ LearnedApp.propTypes = {
   coordinates: PropTypes.shape({
     w: PropTypes.number.isRequired,
   }).isRequired,
+  query: PropTypes.shape({}).isRequired,
+  currentUser: PropTypes.shape({}).isRequired,
   offsetSetting: PropTypes.shape({
     addedWellIds: PropTypes.shape([]).isRequired,
     bicWellIds: PropTypes.shape([]).isRequired,
@@ -252,7 +250,6 @@ LearnedApp.propTypes = {
   savedDepthFilter: PropTypes.shape({}),
   savedDateFilter: PropTypes.shape([]),
   savedTableSettings: PropTypes.arrayOf(PropTypes.shape({})),
-  savedChartExpanded: PropTypes.bool,
   onSettingsChange: PropTypes.func.isRequired,
 };
 
@@ -265,7 +262,6 @@ LearnedApp.defaultProps = {
   savedDepthFilter: {},
   savedDateFilter: [null, null],
   savedTableSettings: DEFAULT_SETTINGS.savedTableSettings,
-  savedChartExpanded: DEFAULT_SETTINGS.savedChartExpanded,
 };
 
 export default memo(LearnedApp);

@@ -266,7 +266,6 @@ export const useSaveSettings = (
   depthFilter,
   dateFilter,
   tableSettings,
-  chartExpanded,
   onSettingsChange
 ) => {
   const initialLoadingRef = useRef(true);
@@ -279,7 +278,6 @@ export const useSaveSettings = (
       savedDepthFilter: depthFilter,
       savedDateFilter: dateFilter,
       savedTableSettings: tableSettings,
-      savedChartExpanded: chartExpanded,
     });
   };
 
@@ -301,6 +299,5 @@ export const useSaveSettings = (
     depthFilter,
     dateFilter,
     tableSettings,
-    chartExpanded,
   ]);
 };

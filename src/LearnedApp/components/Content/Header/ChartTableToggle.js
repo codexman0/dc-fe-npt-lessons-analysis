@@ -1,17 +1,16 @@
 import { func, bool } from 'prop-types';
+import { Assessment as ChartIcon, ViewList as TableIcon } from '@material-ui/icons';
 
 import ToggleButton from './ToggleButton';
 
-import { Assessment as ChartIcon, ViewList as TableIcon } from '@material-ui/icons';
-
 const TABS = [
-  {
-    label: <ChartIcon fontSize="small" />,
-    key: true,
-  },
   {
     label: <TableIcon fontSize="small" />,
     key: false,
+  },
+  {
+    label: <ChartIcon fontSize="small" />,
+    key: true,
   },
 ];
 

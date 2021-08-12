@@ -6,6 +6,7 @@ import { makeStyles, TableContainer } from '@material-ui/core';
 import Header from './Header';
 import Settings from './Settings';
 import LearnTable from './LearnTable';
+import ChartTable from './ChartTable';
 import WellsMap from './Map';
 import Legend from './Legend';
 import AppFooter from './AppFooter';
@@ -78,6 +79,11 @@ function Content({
   onChangeShowWellFullName,
   onChangeTableSettings,
   onShowTutorial,
+  well,
+  coordinates,
+  query,
+  currentUser,
+  offsetSetting,
 }) {
   const [mapExpanded, setMapExpanded] = useState(true);
   const [showChartView, setShowChartView] = useState(true);
@@ -101,7 +107,7 @@ function Content({
           get(row, ['data', 'start_time']) >= startTimeStamp &&
           get(row, ['data', 'start_time']) <= endTimeStamp;
         if (typeChecked && dateChecked) {
-          counter += 1
+          counter += 1;
           data.push({
             id: counter,
             wellName: get(
@@ -262,15 +268,27 @@ function Content({
         </div>
       )}
 
-      <TableContainer className={classes.tableWrapper}>
-        <LearnTable
-          showWellFullName={showWellFullName}
-          onChangeShowWellFullName={onChangeShowWellFullName}
-          data={filteredData}
-          tableSettings={tableSettings}
-          onMouseEvent={handleMouseEvent}
-        />
-      </TableContainer>
+      {!showChartView ? (
+        <TableContainer className={classes.tableWrapper}>
+          <LearnTable
+            showWellFullName={showWellFullName}
+            onChangeShowWellFullName={onChangeShowWellFullName}
+            data={filteredData}
+            tableSettings={tableSettings}
+            onMouseEvent={handleMouseEvent}
+          />
+        </TableContainer>
+      ) : (
+        <div className={classes.tableWrapper}>
+          <ChartTable
+            well={well}
+            coordinates={coordinates}
+            query={query}
+            currentUser={currentUser}
+            selectedWellIds={get(offsetSetting, 'selectedWellIds')}
+          />
+        </div>
+      )}
       <div className={classes.legendWrapper}>
         <Legend records={filteredData} typeFilter={nptTypeFilter} />
       </div>
@@ -281,6 +299,10 @@ function Content({
 
 Content.propTypes = {
   isMobile: PropTypes.bool.isRequired,
+  well: PropTypes.shape({ id: PropTypes.number }).isRequired,
+  coordinates: PropTypes.shape({}).isRequired,
+  query: PropTypes.shape({}).isRequired,
+  currentUser: PropTypes.shape({}).isRequired,
   isDrawerOpen: PropTypes.bool.isRequired,
   showWellFullName: PropTypes.bool.isRequired,
   onChangeShowWellFullName: PropTypes.func.isRequired,
@@ -294,12 +316,9 @@ Content.propTypes = {
   dateFilter: PropTypes.shape([]).isRequired,
   offsetWells: PropTypes.shape([]),
   tableSettings: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
-  pageInfo: PropTypes.shape({
-    pageNo: PropTypes.number,
-    perPage: PropTypes.number,
-  }).isRequired,
   onChangeTableSettings: PropTypes.func.isRequired,
   onShowTutorial: PropTypes.func.isRequired,
+  offsetSetting: PropTypes.shape({}).isRequired,
 };
 
 Content.defaultProps = {

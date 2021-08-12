@@ -67,9 +67,9 @@ const ToggleButton = ({ tabs, index, onChange, classes }) => {
 };
 
 ToggleButton.propTypes = {
-  tabs: PropTypes.arrayOf(PropTypes.shape({ label: PropTypes.object.isRequired })).isRequired,
+  tabs: PropTypes.arrayOf(PropTypes.shape({ label: PropTypes.shape({}) })).isRequired,
   onChange: PropTypes.func.isRequired,
-  classes: PropTypes.object,
+  classes: PropTypes.shape({}),
   index: PropTypes.number,
 };
 
