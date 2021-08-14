@@ -42,7 +42,6 @@ function LearnedApp(props) {
   const {
     well,
     coordinates,
-    query,
     offsetSetting,
     savedShowChart,
     savedEvent,
@@ -65,7 +64,6 @@ function LearnedApp(props) {
     ];
     return uniq(selectedWellIds);
   }, [well, offsetSetting]);
-
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
   const [showChartView, setShowChartView] = useState(savedShowChart);
   const [eventKind, setEventKind] = useState(savedEvent);
@@ -205,8 +203,6 @@ function LearnedApp(props) {
               onChangeTableSettings={setTableSettings}
               onShowTutorial={handleShowTutorial}
               well={well}
-              query={query}
-              offsetSetting={offsetSetting}
             />
           ) : (
             <div className={classes.loadingWrapper}>
@@ -238,11 +234,9 @@ LearnedApp.propTypes = {
   coordinates: PropTypes.shape({
     w: PropTypes.number.isRequired,
   }).isRequired,
-  query: PropTypes.shape({}).isRequired,
   offsetSetting: PropTypes.shape({
     addedWellIds: PropTypes.shape([]).isRequired,
     bicWellIds: PropTypes.shape([]).isRequired,
-    bicManualWellIds: PropTypes.shape([]).isRequired,
   }).isRequired,
   savedIsTutorialShown: PropTypes.bool,
   savedShowChart: PropTypes.bool,

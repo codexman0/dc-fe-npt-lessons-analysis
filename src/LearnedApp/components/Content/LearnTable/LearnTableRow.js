@@ -29,6 +29,13 @@ const useStyles = makeStyles({
     padding: '8px 0 8px 10px',
     background: '#202020',
   },
+  typeCell: {
+    padding: '8px 0 8px 10px',
+    background: '#202020',
+    '&:hover': {
+      cursor: 'pointer',
+    },
+  },
   tickCellValue: ({ showWellFullName }) => {
     if (showWellFullName) {
       return {
@@ -173,6 +180,7 @@ function LearnTableRow({
   onRemove,
   handleClickMoreCell,
   getCellStyles,
+  onClickInfo,
 }) {
   const classes = useStyles({ showWellFullName });
   const rowStyle = { background: '#2c2c2c' };
@@ -215,8 +223,9 @@ function LearnTableRow({
       {rowSettings.map(columnSettings => (
         <TableCell
           key={columnSettings.key}
-          className={classes.bodyCell}
+          className={columnSettings.key === 'type' ? classes.typeCell : classes.bodyCell}
           style={getCellStyles(columnSettings.key, 2)}
+          onClick={columnSettings.key === 'type' ? () => onClickInfo(rowData.wellId) : null}
         >
           {columnSettings.key === 'wellName' ? (
             <Tooltip title={formatWellNameTooltip(rowData.wellName, showWellFullName)}>
@@ -283,6 +292,7 @@ LearnTableRow.propTypes = {
   onRemove: PropTypes.func.isRequired,
   handleClickMoreCell: PropTypes.func.isRequired,
   getCellStyles: PropTypes.func.isRequired,
+  onClickInfo: PropTypes.func.isRequired,
 };
 
 export default LearnTableRow;

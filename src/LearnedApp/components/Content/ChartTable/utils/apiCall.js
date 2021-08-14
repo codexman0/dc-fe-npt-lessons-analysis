@@ -149,7 +149,6 @@ export async function fetchWellData(assetId) {
   };
 
   const convertedWellData = getConvertedWellData(wellData);
-
   return convertedWellData;
 }
 

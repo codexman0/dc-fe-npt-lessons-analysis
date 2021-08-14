@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc';
 import { FormControlLabel, Checkbox, Typography, makeStyles } from '@material-ui/core';
 import { Clear as ClearIcon, Done as DoneIcon } from '@material-ui/icons';

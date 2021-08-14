@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { get } from 'lodash';
+import { get, uniq } from 'lodash';
 import { IconButton, Typography, Tooltip, makeStyles } from '@material-ui/core';
 import { AddCircle as AddCircleIcon } from '@material-ui/icons';
 
@@ -42,10 +42,11 @@ const AppHeader = ({ offsetSetting, onOpenOffsetsDialog }) => {
   const classes = useStyles();
 
   const offsetsCount = useMemo(() => {
-    return (
-      (get(offsetSetting, ['addedWellIds']) || []).length +
-      (get(offsetSetting, ['bicWellIds']) || []).length
-    );
+    const data = [
+      ...(get(offsetSetting, ['addedWellIds']) || []),
+      ...(get(offsetSetting, ['bicWellIds']) || []),
+    ];
+    return uniq(data).length;
   }, [offsetSetting]);
 
   return (

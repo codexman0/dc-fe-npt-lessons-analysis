@@ -100,7 +100,6 @@ function Content({
   onShowTutorial,
   well,
   coordinates,
-  offsetSetting,
 }) {
   // NOTE: Fetch npt and lessons data
   const classes = useStyles({ isMobile });
@@ -231,8 +230,8 @@ function Content({
   const assetId = well && get(well, 'asset_id');
   const assetStatus = well && get(well, 'status');
   const offsetWellIds = useMemo(() => {
-    return get(offsetSetting, 'selectedWellIds') || [];
-  }, [offsetSetting]);
+    return offsetWells.map(well => well.id) || [];
+  }, [offsetWells]);
   const appSize = getAppSize(coordinates, false);
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [wellsData, setWellsData] = useState([]);
@@ -384,7 +383,6 @@ Content.propTypes = {
   onChangeShowChart: PropTypes.func.isRequired,
   onChangeTableSettings: PropTypes.func.isRequired,
   onShowTutorial: PropTypes.func.isRequired,
-  offsetSetting: PropTypes.shape({}).isRequired,
 };
 
 Content.defaultProps = {

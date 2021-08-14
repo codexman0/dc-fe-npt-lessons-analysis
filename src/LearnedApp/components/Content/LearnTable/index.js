@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { get } from 'lodash';
 import {
@@ -18,18 +18,20 @@ import {
 
 import { HIGHLIGHTING_METRICS } from '../../../constants';
 import LearnTableRow from './LearnTableRow';
+import InfoDialog from './InfoDialog';
 
 const useStyles = makeStyles({
   headerCell: {
+    height: '100%',
     padding: '6px 0 6px 10px',
     background: '#202020',
     borderTop: '1px solid #5C5C5C',
     color: '#9e9e9e',
     fontSize: '12px',
-    lineHeight: '14px',
     position: 'sticky',
     top: 0,
     zIndex: 1,
+    verticalAlign: 'inherit',
   },
   headerCellContent: {
     display: 'flex',
@@ -108,9 +110,23 @@ function LearnTable({
     );
     setTableData(data);
   };
+
+  // NOTE: Info dialog
+  const [infoOpenDialog, setInfoOpenDialog] = useState(false);
+  const handleClickInfo = wellId => {
+    console.log('111=', wellId);
+    setInfoOpenDialog(true);
+  };
+
+  const handleClosInfoDialog = () => {
+    setInfoOpenDialog(false);
+  };
+
   console.log('tableData=', tableData);
   return (
     <>
+      {infoOpenDialog && <InfoDialog onClose={handleClosInfoDialog} />}
+
       <Table aria-label="npt table" style={{ borderCollapse: 'separate' }}>
         <TableHead>
           <TableRow>
@@ -162,6 +178,7 @@ function LearnTable({
               onMouseEvent={onMouseEvent}
               handleClickMoreCell={handleClickMoreCell}
               getCellStyles={getCellStyles}
+              onClickInfo={handleClickInfo}
             />
           ))}
         </TableBody>

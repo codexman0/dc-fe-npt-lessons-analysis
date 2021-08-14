@@ -199,7 +199,7 @@ export const TABLE_LIST = [
     kind: TABLE_KIND.all,
     active: true,
     show: true,
-    width: 80,
+    width: 90,
   },
   {
     label: 'Operation',

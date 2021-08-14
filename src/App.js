@@ -2,7 +2,7 @@ import { memo, useCallback, useState } from 'react';
 import { get } from 'lodash';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core';
-import { OffsetWellPickerV2 } from '@corva/ui/components';
+import { BICOffsetPickerDialog } from '@corva/ui/components';
 
 import AppHeader from './AppHeader';
 import LearnedApp from './LearnedApp';
@@ -41,7 +41,6 @@ function App(props) {
     newOffsetSetting => {
       setOffsetSetting(newOffsetSetting);
       props.onSettingChange('savedOffsetSetting', newOffsetSetting);
-      setIsOpenOffsetsDialog(false);
     },
     [props.onSettingChange]
   );
@@ -54,7 +53,8 @@ function App(props) {
         <LearnedApp {...props} offsetSetting={offsetSetting} />
       </div>
 
-      <OffsetWellPickerV2
+      <BICOffsetPickerDialog
+        assetId={get(props, ['well', 'asset_id'])}
         currentUser={props.currentUser}
         companyId={get(props, ['well', 'companyId'])}
         offsetSetting={offsetSetting}

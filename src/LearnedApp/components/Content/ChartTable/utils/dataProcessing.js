@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import { getUnitDisplay } from '@corva/ui/utils'; // song
+import { getUnitDisplay } from '@corva/ui/utils';
 
 export const getInitHazardFilters = (initFilter, nptPickList) => {
   if (initFilter.settings) {
