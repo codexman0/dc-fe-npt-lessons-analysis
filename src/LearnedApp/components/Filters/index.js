@@ -1,7 +1,15 @@
 import { memo, useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { debounce, get } from 'lodash';
-import { Collapse, Typography, List, ListItem, Checkbox, IconButton } from '@material-ui/core';
+import {
+  Collapse,
+  Typography,
+  List,
+  ListItem,
+  Checkbox,
+  IconButton,
+  Tooltip,
+} from '@material-ui/core';
 import { KeyboardDatePicker } from '@material-ui/pickers';
 import { ExpandLess, ExpandMore, InfoOutlined, CalendarToday } from '@material-ui/icons';
 
@@ -146,9 +154,11 @@ function Filters({
                 onChange={() => handleToggleEventSelect(item.key)}
               />
               <Typography className={classes.listItemLabel}>{item.title}</Typography>
-              <IconButton onClick={() => handleClickInfo(item.key)}>
-                <InfoOutlined fontSize="small" />
-              </IconButton>
+              <Tooltip title={item.title}>
+                <IconButton onClick={() => handleClickInfo(item.key)}>
+                  <InfoOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </ListItem>
           ))}
         </List>

@@ -50,6 +50,7 @@ export const getLayersInfo = (containerWidth, containerHeight, casingData) => {
     : gridWidth / 2;
 
   const wellboreStartX = centerX - wellboreWidth / 2;
+  // const wellboreStartX = CASING_LAYER_WIDTH;
   const wellboreEndX = wellboreStartX + wellboreWidth;
 
   const casingLeftEndX = wellboreStartX;
@@ -57,8 +58,12 @@ export const getLayersInfo = (containerWidth, containerHeight, casingData) => {
   const casingRightStartX = wellboreEndX;
   const casingRightEndX = casingRightStartX + CASING_LAYER_WIDTH;
 
-  const hazardStartX = casingLeftStartX - HAZARD_LAYER_WIDTH - GUTTER_SIZE;
-  const hazardSize = HAZARD_SIZE;
+  // const nptStartX = casingLeftStartX - HAZARD_LAYER_WIDTH - GUTTER_SIZE;
+  const nptStartX = casingRightEndX + HAZARD_LAYER_WIDTH;
+  const nptSize = HAZARD_SIZE;
+
+  const learnedStartX = nptStartX + nptSize + 20;
+  // const learnedStartX = casingRightEndX + nptSize;
 
   return {
     isMinimized,
@@ -71,7 +76,8 @@ export const getLayersInfo = (containerWidth, containerHeight, casingData) => {
     casingRightStartX,
     casingRightEndX,
     casingWidth,
-    hazardStartX,
-    hazardSize,
+    nptStartX,
+    nptSize,
+    learnedStartX,
   };
 };

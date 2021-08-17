@@ -18,7 +18,6 @@ import {
 
 import { HIGHLIGHTING_METRICS } from '../../../constants';
 import LearnTableRow from './LearnTableRow';
-import InfoDialog from './InfoDialog';
 
 const useStyles = makeStyles({
   headerCell: {
@@ -111,22 +110,8 @@ function LearnTable({
     setTableData(data);
   };
 
-  // NOTE: Info dialog
-  const [infoOpenDialog, setInfoOpenDialog] = useState(false);
-  const handleClickInfo = wellId => {
-    console.log('111=', wellId);
-    setInfoOpenDialog(true);
-  };
-
-  const handleClosInfoDialog = () => {
-    setInfoOpenDialog(false);
-  };
-
-  console.log('tableData=', tableData);
   return (
     <>
-      {infoOpenDialog && <InfoDialog onClose={handleClosInfoDialog} />}
-
       <Table aria-label="npt table" style={{ borderCollapse: 'separate' }}>
         <TableHead>
           <TableRow>
@@ -178,7 +163,6 @@ function LearnTable({
               onMouseEvent={onMouseEvent}
               handleClickMoreCell={handleClickMoreCell}
               getCellStyles={getCellStyles}
-              onClickInfo={handleClickInfo}
             />
           ))}
         </TableBody>

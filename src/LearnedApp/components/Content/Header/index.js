@@ -30,7 +30,7 @@ const useStyles = makeStyles({
   },
   chartSettingsIcon: {
     fontSize: '16px',
-  },  
+  },
 });
 
 function Header({
@@ -44,22 +44,26 @@ function Header({
 
   return (
     <>
-      <div>
-        <Tooltip title={mapExpanded ? 'Collapse Map' : 'Expand Map'}>
-          <IconButton
-            data-not-migrated-MuiIconButton
-            className={classes.expandButton}
-            onClick={onChangeMapExpanded}
-          >
-            {mapExpanded ? (
-              <ExpandLessIcon className={classes.expandIcon} />
-            ) : (
-              <ExpandMoreIcon className={classes.expandIcon} />
-            )}
-          </IconButton>
-        </Tooltip>
-        Maps
-      </div>
+      {!showChartView ? (
+        <div>
+          <Tooltip title={mapExpanded ? 'Collapse Map' : 'Expand Map'}>
+            <IconButton
+              data-not-migrated-MuiIconButton
+              className={classes.expandButton}
+              onClick={onChangeMapExpanded}
+            >
+              {mapExpanded ? (
+                <ExpandLessIcon className={classes.expandIcon} />
+              ) : (
+                <ExpandMoreIcon className={classes.expandIcon} />
+              )}
+            </IconButton>
+          </Tooltip>
+          Maps
+        </div>
+      ) : (
+        <div>&nbsp;</div>
+      )}
       <div className={classes.buttonsContainer}>
         <ChartTableToggle value={showChartView} onChange={onChangeChartTableView} />
         <div className={classes.chartSettingsButtonContainer}>

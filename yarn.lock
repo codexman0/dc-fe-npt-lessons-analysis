@@ -1028,10 +1028,10 @@
     eslint-plugin-react-hooks "^4.2.0"
     prettier "^2.0.0"
 
-"@corva/ui@^0.15.0-6":
-  version "0.15.0-6"
-  resolved "https://registry.yarnpkg.com/@corva/ui/-/ui-0.15.0-6.tgz#d06aab174ef1afc0aef6fcc97ad105beeb37f47a"
-  integrity sha512-iBw4fFMf/P8Qn3FIE1cwFrGsR9W6V9xntir6VRp54okXwjfAeu2CwEaf/OH2v0LKNgMQQwa6oKuNJNNTGEBaeA==
+"@corva/ui@^0.15.0-20":
+  version "0.15.0-20"
+  resolved "https://registry.yarnpkg.com/@corva/ui/-/ui-0.15.0-20.tgz#72607d4e7da374cb57833a5ea99d13a546220c47"
+  integrity sha512-APU38MT8+raNDbrcDRPQ6vhyfvOiFqbQ+viBsf67PmC09CNoYp6MeN4E/tKw6YIvRfRzYcMZrApvZc4etwV3Lw==
   dependencies:
     "@babel/core" "^7.12.10"
     "@babel/plugin-transform-react-jsx" "^7.12.11"
@@ -1081,6 +1081,7 @@
     moment "2.23.0"
     moment-duration-format "1.3.0"
     moment-timezone "0.5.23"
+    node-fetch "^2.6.1"
     optimize-css-assets-webpack-plugin "5.0.3"
     path "0.12.7"
     postcss "8.2.4"
@@ -7829,6 +7830,11 @@ no-case@^3.0.4:
   dependencies:
     lower-case "^2.0.2"
     tslib "^2.0.3"
+
+node-fetch@^2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
+  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
 
 node-forge@^0.10.0:
   version "0.10.0"

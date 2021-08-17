@@ -1,3 +1,4 @@
+import { get } from 'lodash';
 import { convertValue } from '@corva/ui/utils';
 
 export function convertCasingData(casingData = []) {
@@ -53,6 +54,21 @@ export function convertNptData(nptData = []) {
   });
 }
 
+export function convertLessonsData(lessonsData = []) {
+  return lessonsData.map(lesson => {
+    const { data } = lesson;
+
+    return {
+      ...lesson,
+      data: {
+        ...data,
+        depth: convertValue(get(data, 'md_start'), 'length', 'ft'),
+        depth_tvd: convertValue(get(data, 'tvd_start'), 'length', 'ft'),
+      },
+    };
+  });
+}
+
 export function convertPlanSurveyData(planSurveyData) {
   if (!planSurveyData) {
     return planSurveyData;
@@ -79,18 +95,13 @@ export function convertPlanSurveyData(planSurveyData) {
 }
 
 export const getConvertedWellData = wellData => {
-  const {
-    casingData,
-    holeSectionData,
-    nptData,
-    planSurveyData,
-  } = wellData;
-
+  const { casingData, holeSectionData, nptData, lessonsData, planSurveyData } = wellData;
   return {
     ...wellData,
     casingData: convertCasingData(casingData),
     holeSectionData: convertHoleSectionData(holeSectionData),
     nptData: convertNptData(nptData),
+    lessonsData: convertLessonsData(lessonsData),
     planSurveyData: convertPlanSurveyData(planSurveyData),
   };
 };

@@ -1,42 +1,7 @@
-import { get, set } from 'lodash';
-import {
-  getAppStorage,
-  getPicklist,
-  getResolvedAssets,
-  getWell,
-  getAsset,
-} from '@corva/ui/clients/jsonApi';
-
+import { get, set, uniq } from 'lodash';
+import { getAppStorage, getResolvedAssets, getWell, getAsset } from '@corva/ui/clients/jsonApi';
 import { METADATA } from './meta';
 import { getConvertedWellData } from './conversion';
-
-export async function fetchNptPickList() {
-  let res;
-  try {
-    res = await getPicklist(`npt_types`);
-  } catch (e) {
-    return [];
-  }
-
-  return res.items
-    .filter(nptType => {
-      return get(nptType, ['metadata', 'showInWellSchematic']);
-    })
-    .reduce((result, supportedNptType) => {
-      const name = get(supportedNptType, ['name']);
-      const displayName = get(supportedNptType, ['metadata', 'label']);
-      const color = get(supportedNptType, ['metadata', 'color']);
-
-      return {
-        ...result,
-        [name]: {
-          on: true, // used by granular filter settings
-          displayName,
-          color,
-        },
-      };
-    }, {});
-}
 
 export async function fetchAsset(assetId) {
   const asset = await getAsset(assetId, {
@@ -82,39 +47,35 @@ export async function fetchAsset(assetId) {
   return asset;
 }
 
-export async function fetchWellData(assetId) {
+export async function fetchWellData(assetId, nptData, lessonsData) {
   let asset;
   let casingData;
   let holeSectionData;
   let drillstringData;
   let planSurveyData;
-  let nptData;
+  let filteredNptData;
+  let filteredLessonsData;
 
   try {
-    [asset, casingData, holeSectionData, drillstringData, planSurveyData, nptData] =
-      await Promise.all([
-        fetchAsset(assetId),
-        getAppStorage(METADATA.provider, METADATA.recordCollections.casings, assetId, {
-          limit: 1000,
-          sort: '{data.bottom_depth: 1}',
-        }),
-        getAppStorage(METADATA.provider, METADATA.recordCollections.holeSection, assetId, {
-          limit: 1000,
-          sort: '{data.top_depth: 1}',
-        }),
-        getAppStorage(METADATA.provider, METADATA.recordCollections.drillstring, assetId, {
-          limit: 1000,
-          sort: '{data.start_depth: 1}',
-        }),
-        getAppStorage(METADATA.provider, METADATA.recordCollections.planSurvey, assetId, {
-          limit: 1,
-          sort: '{timestamp:-1}',
-        }),
-        getAppStorage(METADATA.provider, METADATA.recordCollections.nptEvents, assetId, {
-          limit: 1000,
-          sort: '{data.depth: 1}',
-        }),
-      ]);
+    [asset, casingData, holeSectionData, drillstringData, planSurveyData] = await Promise.all([
+      fetchAsset(assetId),
+      getAppStorage(METADATA.provider, METADATA.recordCollections.casings, assetId, {
+        limit: 1000,
+        sort: '{data.bottom_depth: 1}',
+      }),
+      getAppStorage(METADATA.provider, METADATA.recordCollections.holeSection, assetId, {
+        limit: 1000,
+        sort: '{data.top_depth: 1}',
+      }),
+      getAppStorage(METADATA.provider, METADATA.recordCollections.drillstring, assetId, {
+        limit: 1000,
+        sort: '{data.start_depth: 1}',
+      }),
+      getAppStorage(METADATA.provider, METADATA.recordCollections.planSurvey, assetId, {
+        limit: 1,
+        sort: '{timestamp:-1}',
+      }),
+    ]);
 
     // filtering out rig move/skid
     holeSectionData = holeSectionData.filter(
@@ -125,6 +86,12 @@ export async function fetchWellData(assetId) {
     drillstringData = drillstringData.filter(
       drillstring => !drillstring.data.id.toString().includes('.')
     );
+
+    // filtering out npt
+    filteredNptData = nptData.filter(npt => get(npt, 'asset_id') === assetId);
+
+    // filtering out lessons
+    filteredLessonsData = lessonsData.filter(lesson => get(lesson, 'asset_id') === assetId);
   } catch (e) {
     console.error(e);
     return {
@@ -135,6 +102,7 @@ export async function fetchWellData(assetId) {
       drillstringData: [],
       planSurveyData: {},
       nptData: [],
+      lessonsData: [],
     };
   }
 
@@ -145,27 +113,19 @@ export async function fetchWellData(assetId) {
     holeSectionData,
     drillstringData,
     planSurveyData: planSurveyData.length ? planSurveyData[0].data : {},
-    nptData,
+    nptData: filteredNptData,
+    lessonsData: filteredLessonsData,
   };
 
   const convertedWellData = getConvertedWellData(wellData);
   return convertedWellData;
 }
 
-export async function fetchWellsData(subjectAssetId, offsetWells) {
-  const wellIds = offsetWells.reduce(
-    (result, offsetWell) => {
-      const wellId = offsetWell;
-
-      if (result.find(prevWellId => prevWellId === wellId)) {
-        return result;
-      }
-      return [...result, wellId];
-    },
-    [subjectAssetId]
+export async function fetchWellsData(subjectAssetId, offsetWellIds, nptData, lessonsData) {
+  const wellIds = uniq(offsetWellIds.concat(subjectAssetId));
+  const rawWellsData = await Promise.all(
+    wellIds.map(wellId => fetchWellData(wellId, nptData, lessonsData))
   );
-
-  const rawWellsData = await Promise.all(wellIds.map(wellId => fetchWellData(wellId)));
 
   return rawWellsData;
 }

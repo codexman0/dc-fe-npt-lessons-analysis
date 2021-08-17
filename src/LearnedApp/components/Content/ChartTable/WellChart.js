@@ -3,33 +3,48 @@ import { memo, useRef, useEffect, useCallback } from 'react';
 import { arrayOf, shape, number, func } from 'prop-types';
 import { select, scaleLinear } from 'd3';
 
-import { getHazardGroups } from './utils/dataProcessing';
+import { getNptGroups, getLessonsGroups, getAdjustedLabelData } from './utils/dataProcessing';
 import { getLayersInfo } from './utils/responsive';
 import { defineClip } from './utils/defs';
 import { defineTooltip } from './utils/tooltip';
 
 import { renderXGrid, renderYGrid } from './utils/axis';
-import { renderLeftCasings, renderRightCasings, renderSectionFill } from './utils/casing';
-import { renderHazards } from './utils/hazard';
+import {
+  renderLeftCasings,
+  renderRightCasings,
+  renderSectionFill,
+  renderLessons,
+} from './utils/casing';
+import { renderNpts } from './utils/hazard';
 
 function WellChart(props) {
   const {
     assetId,
     chartSize,
     casingData,
-    hazardFilters,
+    nptFilters,
+    lessonsFilter,
     zoom,
     nptData,
+    lessonsData,
     onChangeGridHeight,
-    onClickHazard,
+    onClickNpt,
+    onClickLessons,
   } = props;
   const svgRef = useRef();
 
-  const handleClickHazard = useCallback(
+  const handleClickNpt = useCallback(
     id => {
-      onClickHazard(nptData.findIndex(item => item._id === id));
+      onClickNpt(nptData.findIndex(item => item._id === id));
     },
-    [onClickHazard, nptData]
+    [onClickNpt, nptData]
+  );
+
+  const handleClickLessons = useCallback(
+    index => {
+      onClickLessons(index);
+    },
+    [onClickLessons]
   );
 
   useEffect(() => {
@@ -41,16 +56,22 @@ function WellChart(props) {
       casingWidth,
       casingLeftStartX,
       casingRightStartX,
-      hazardStartX,
-      hazardSize,
+      nptStartX,
+      nptSize,
+      learnedStartX,
     } = getLayersInfo(chartSize.width, chartSize.height, casingData);
+
+    // const pxPerUnit = gridHeight / (zoom[1] - zoom[0]);
+    // const labelData = getAdjustedLabelData(pxPerUnit, casingData);
 
     onChangeGridHeight(gridHeight);
     defineTooltip();
     const depthScale = scaleLinear().domain([zoom[0], zoom[1]]).range([0, gridHeight]);
     const xScale = scaleLinear().domain([0, 10]).range([0, gridWidth]);
-    const hazardGroups = getHazardGroups(assetId, nptData, hazardFilters, zoom);
-
+    const nptGroups = getNptGroups(nptData, nptFilters, zoom);
+    const lessonsGroups = getLessonsGroups(lessonsData, lessonsFilter, zoom);
+    // console.log('nptGroups=', nptGroups);
+    // console.log('lessonsGroups=', lessonsGroups);
     const svg = select(svgRef.current)
       .attr('width', chartSize.width)
       .attr('height', chartSize.height);
@@ -85,17 +106,11 @@ function WellChart(props) {
     renderLeftCasings(grid, depthScale, casingData, casingLeftStartX, casingWidth, true);
     renderRightCasings(grid, depthScale, casingData, casingRightStartX, casingWidth, true);
 
+    renderLessons(grid, depthScale, lessonsGroups, learnedStartX, handleClickLessons);
+
     const gradientPatternId = `multiHazardPattern${assetId}`;
-    renderHazards(
-      grid,
-      depthScale,
-      hazardStartX,
-      hazardSize,
-      hazardGroups,
-      gradientPatternId,
-      handleClickHazard
-    );
-  }, [assetId, chartSize, casingData, hazardFilters, zoom]);
+    renderNpts(grid, depthScale, nptStartX, nptSize, nptGroups, gradientPatternId, handleClickNpt);
+  }, [assetId, chartSize, casingData, nptFilters, zoom]);
 
   return (
     <svg ref={svgRef} style={{ width: '100%', height: '100%' }}>
@@ -130,11 +145,14 @@ WellChart.propTypes = {
     height: number.isRequired,
   }).isRequired,
   casingData: arrayOf(shape({})).isRequired,
-  hazardFilters: shape({}).isRequired,
+  nptFilters: shape({}).isRequired,
+  lessonsFilter: shape({}).isRequired,
   zoom: arrayOf(number).isRequired,
   nptData: arrayOf(shape({})).isRequired,
+  lessonsData: arrayOf(shape({})).isRequired,
   onChangeGridHeight: func.isRequired,
-  onClickHazard: func.isRequired,
+  onClickNpt: func.isRequired,
+  onClickLessons: func.isRequired,
 };
 
 export default memo(WellChart);

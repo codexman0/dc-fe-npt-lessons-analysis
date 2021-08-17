@@ -1,23 +1,8 @@
 /* eslint-disable no-underscore-dangle */
+import { get } from 'lodash';
 import { getUnitDisplay } from '@corva/ui/utils';
 
-export const getInitHazardFilters = (initFilter, nptPickList) => {
-  if (initFilter.settings) {
-    return initFilter;
-  }
-
-  return {
-    ...initFilter,
-    settings: {
-      ...nptPickList,
-      offsetWellHazards: {
-        on: true,
-        displayName: 'Offset Well Hazards',
-        order: 1,
-      },
-    },
-  };
-};
+import { MIN_CASING_LABEL_HEIGHT } from '../constants';
 
 export const getMaxDepth = wellsData => {
   const lengthUnit = getUnitDisplay('length');
@@ -49,53 +34,17 @@ export const getMaxDepth = wellsData => {
   return maxDepth;
 };
 
-function getFilteredNptData(wellData, nptPickList) {
-  const { nptData } = wellData;
-
-  const newNptData = [];
-  nptData.forEach(npt => {
-    const nptMeta = nptPickList[npt.data.type];
-
-    if (nptMeta) {
-      newNptData.push({
-        ...npt,
-        data: {
-          ...npt.data,
-          display_name: nptMeta.displayName,
-        },
-      });
-    }
-  });
-
-  return newNptData;
-}
-
-export const processWellsData = (rawWellsData, nptPickList) => {
+export const sortDepthWellsData = rawWellsData => {
   const wellsData = rawWellsData.map(wellData => {
-    const nptData = getFilteredNptData(wellData, nptPickList);
+    const nptData = wellData.nptData.sort((i, j) => i.data.depth - j.data.depth);
+    const lessonsData = wellData.lessonsData.sort((i, j) => i.data.depth - j.data.depth);
     return {
       ...wellData,
       nptData,
+      lessonsData,
     };
   });
-
-  const [subjectWellData, ...offsetWellsData] = wellsData;
-
-  // subject well data needs to show all npt events from offset wells
-  const allNptData = wellsData
-    .reduce((result, wellData) => {
-      const { nptData } = wellData;
-      return result.concat(nptData);
-    }, [])
-    .sort((a, b) => a.data.depth - b.data.depth);
-
-  return [
-    {
-      ...subjectWellData,
-      nptData: allNptData,
-    },
-    ...offsetWellsData,
-  ];
+  return wellsData;
 };
 
 export function getInitZoom(prevZoom, defaultZoom) {
@@ -105,48 +54,133 @@ export function getInitZoom(prevZoom, defaultZoom) {
   return defaultZoom;
 }
 
-export const getHazardGroups = (assetId, nptData, hazardFilters, zoom) => {
-  if (!hazardFilters.on) {
+export const getNptGroups = (nptData, nptFilters, zoom) => {
+  if (!nptFilters || nptFilters.length === 0) {
     return [];
   }
-
   const groupSize = (zoom[1] - zoom[0]) / 100;
-  const hazards = [];
+  const npts = [];
   nptData.forEach(npt => {
-    const shouldIncludeOffsetWells = hazardFilters.settings.offsetWellHazards.on;
-    const isOn = hazardFilters.settings[npt.data.type].on;
     const isInDepthRange = npt.data.depth >= zoom[0] && npt.data.depth <= zoom[1];
 
-    if (
-      (shouldIncludeOffsetWells || (!shouldIncludeOffsetWells && npt.asset_id === assetId)) &&
-      isOn &&
-      isInDepthRange
-    ) {
-      hazards.push({
+    if (isInDepthRange) {
+      const nptFilter = nptFilters.find(item => item.key === get(npt, ['data', 'type']));
+      npts.push({
         id: npt._id,
         type: npt.data.type,
         depth: npt.data.depth,
-        color: hazardFilters.settings[npt.data.type].color,
+        color: nptFilter
+          ? nptFilter.color
+          : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
       });
     }
   });
 
   const groups = [];
-  hazards.forEach(hazard => {
+  npts.forEach(npt => {
     const lastGroup = groups.length ? groups[groups.length - 1] : null;
 
-    if (lastGroup && hazard.depth - lastGroup.depth <= groupSize) {
+    if (lastGroup && npt.depth - lastGroup.depth <= groupSize) {
       // update last group
-      lastGroup.hazards.push(hazard);
+      lastGroup.hazards.push(npt);
     } else {
       // create new group
       const newGroup = {
-        depth: hazard.depth,
-        hazards: [hazard],
+        depth: npt.depth,
+        hazards: [npt],
       };
       groups.push(newGroup);
     }
   });
 
   return groups;
+};
+
+export const getLessonsGroups = (lessonsData, lessonsFilters, zoom) => {
+  if (!lessonsFilters || lessonsFilters.length === 0) {
+    return [];
+  }
+  const groupSize = (zoom[1] - zoom[0]) / 100;
+  const lessons = [];
+  lessonsData.forEach(lesson => {
+    const isInDepthRange = lesson.data.depth >= zoom[0] && lesson.data.depth <= zoom[1];
+
+    if (isInDepthRange) {
+      // const lessonFilter = lessonsFilters.find(item => item.key === get(lesson, ['data', 'type']));
+      lessons.push({
+        id: lesson._id,
+        type: lesson.data.type,
+        depth: lesson.data.depth,
+        title: lesson.data.topic,
+      });
+    }
+  });
+
+  const groups = [];
+  lessons.forEach(lesson => {
+    const lastGroup = groups.length ? groups[groups.length - 1] : null;
+
+    if (lastGroup && lesson.depth - lastGroup.depth <= groupSize) {
+      // update last group
+      lastGroup.hazards.push(lesson);
+    } else {
+      // create new group
+      const newGroup = {
+        depth: lesson.depth,
+        hazards: [lesson],
+      };
+      groups.push(newGroup);
+    }
+  });
+
+  return groups;
+};
+
+// Note: This function mainly adjusts the depth of section, casing, and bhas
+// to prevent them from overlapping
+export const getAdjustedLabelData = (pxPerUnit, allCasings) => {
+  const concated = [];
+
+  allCasings.forEach(casing => {
+    const {
+      _id: id,
+      collection,
+      data: { outer_diameter: size, linear_weight: weight, grade, bottom_depth: depth },
+    } = casing;
+
+    const textPieces = [];
+    textPieces.push(`${size}"`);
+    textPieces.push(`${weight.fixFloat(1)}#`);
+    textPieces.push(grade);
+    const text = textPieces.join(' ');
+
+    concated.push({
+      collection,
+      id,
+      depth,
+      text,
+      showIcon: true,
+    });
+  });
+  concated.sort((i, j) => i.depth - j.depth);
+
+  const casings = [];
+  let minDepth;
+
+  const casingLabelHeight = MIN_CASING_LABEL_HEIGHT; // : MAX_CASING_LABEL_HEIGHT;
+
+  concated.forEach(record => {
+    const newRecord = {
+      ...record,
+      depth: !Number.isFinite(minDepth) ? record.depth : Math.max(minDepth, record.depth),
+    };
+    if (newRecord.collection === 'data.casing') {
+      casings.push(newRecord);
+      minDepth = newRecord.depth + casingLabelHeight / pxPerUnit;
+    }
+  });
+
+  return {
+    casings,
+  };
 };

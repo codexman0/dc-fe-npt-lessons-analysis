@@ -9,6 +9,7 @@ import WellHeader from './WellHeader';
 import WellChart from './WellChart';
 import WellInfoDialog from './dialog/WellInfoDialog';
 import NptEventDialog from './dialog/OneNptDialog';
+import LessonsEventDialog from './dialog/OneLessonsDialog';
 
 const useStyles = makeStyles({
   wellContainer: {
@@ -38,8 +39,8 @@ const useStyles = makeStyles({
 function WellContent(props) {
   const contentRef = useRef();
   const dimensions = useResizeObserver(contentRef);
-  const { wellData, hazardFilters, zoom, appSize, onChangeGridHeight } = props;
-  const { asset, casingData, planSurveyData, nptData } = wellData;
+  const { wellData, nptFilters, lessonsFilter, zoom, appSize, onChangeGridHeight } = props;
+  const { asset, casingData, planSurveyData, nptData, lessonsData } = wellData;
   const classes = useStyles({ isNotDesktop: appSize !== 'desktop' });
   const assetId = get(asset, ['data', 'id']);
   const chartSize = useMemo(() => {
@@ -48,6 +49,9 @@ function WellContent(props) {
   }, [dimensions]);
   const [isWellInfoDialogOpen, setIsWellInfoDialogOpen] = useState(false);
   const [nptIndex, setNptIndex] = useState(-1);
+  const [lessonData, setLessonData] = useState(null);
+  const [rigName, setRigName] = useState(null);
+  const [wellName, setWellName] = useState(null);
 
   const handleToggleWellInfoDialog = useCallback(() => {
     setIsWellInfoDialogOpen(value => !value);
@@ -60,6 +64,20 @@ function WellContent(props) {
   const handleCloseNptEventDialog = useCallback(() => {
     setNptIndex(-1);
   }, []);
+
+  const handleOpenLessonsEventDialog = useCallback(
+    index => {
+      const lesson = lessonsData.find(lesson => get(lesson, '_id') === index) || {};
+      setRigName(get(asset, ['data', 'attributes', 'rig_name']));
+      setWellName(get(asset, ['data', 'attributes', 'name']));
+      setLessonData(lesson.data || {});
+    },
+    [lessonsData]
+  );
+
+  const handleCloseLessonsEventDialog = () => {
+    setLessonData(null);
+  };
 
   const isDataEmpty = wellData.casingData.length < 1;
 
@@ -75,6 +93,16 @@ function WellContent(props) {
 
         {nptIndex !== -1 && (
           <NptEventDialog nptEvent={nptData[nptIndex]} onClose={handleCloseNptEventDialog} />
+        )}
+
+        {lessonData !== null && (
+          <LessonsEventDialog
+            assetId={assetId}
+            rigName={rigName}
+            wellName={wellName}
+            lessonData={lessonData}
+            onClose={handleCloseLessonsEventDialog}
+          />
         )}
 
         {chartSize && (
@@ -93,11 +121,14 @@ function WellContent(props) {
                 assetId={+assetId}
                 chartSize={chartSize}
                 casingData={casingData}
-                hazardFilters={hazardFilters}
+                nptFilters={nptFilters}
+                lessonsFilter={lessonsFilter}
                 zoom={zoom}
                 nptData={nptData}
+                lessonsData={lessonsData}
                 onChangeGridHeight={onChangeGridHeight}
-                onClickHazard={handleOpenNptEventDialog}
+                onClickNpt={handleOpenNptEventDialog}
+                onClickLessons={handleOpenLessonsEventDialog}
               />
             )}
           </div>
@@ -111,7 +142,8 @@ WellContent.propTypes = {
   wellData: shape({}).isRequired,
   zoom: arrayOf(number).isRequired,
   appSize: string.isRequired,
-  hazardFilters: shape({}).isRequired,
+  nptFilters: shape({}).isRequired,
+  lessonsFilter: shape({}).isRequired,
   onChangeGridHeight: func.isRequired,
 };
 

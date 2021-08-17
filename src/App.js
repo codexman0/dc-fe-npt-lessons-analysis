@@ -25,7 +25,7 @@ const useStyles = makeStyles({
 
 function App(props) {
   const classes = useStyles();
-  console.log('props=', props);
+  // console.log('props=', props);
   const [offsetSetting, setOffsetSetting] = useState(props.savedOffsetSetting);
   const [isOpenOffsetsDialog, setIsOpenOffsetsDialog] = useState(false);
 

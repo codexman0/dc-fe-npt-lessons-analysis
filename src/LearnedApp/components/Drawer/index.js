@@ -115,25 +115,27 @@ function Drawer({ children, theme, isTemporary, isOpen, isDisabled, onToggle, on
 
   const handleClickBar = () => {
     if (!isOpen) {
-      onToggle();
+      onToggle(isOpen);
     }
   };
 
   const handleClickButton = e => {
     e.stopPropagation();
-    onToggle();
+    onToggle(isOpen);
   };
 
   return (
     <>
-      {isTemporary && isOpen && <div className={classes.backdrop} onClick={onToggle} />}
+      {isTemporary && isOpen && (
+        <div className={classes.backdrop} onClick={() => onToggle(isOpen)} />
+      )}
       {isTemporary && <div className={classes.placeholder} />}
       <div className={classes.drawer} onClick={handleClickBar}>
         <div className={classes.header}>
           {isOpen ? (
             <>
               <div className={classes.filterButton}>
-                <SortIcon className={classes.filterIcon} />
+                <SortIcon className={classes.filterIcon} onClick={() => onToggle(isOpen)} />
                 <Typography variant="body2" className={classes.filterText}>
                   Filters
                 </Typography>
@@ -146,8 +148,8 @@ function Drawer({ children, theme, isTemporary, isOpen, isDisabled, onToggle, on
               </div>
             </>
           ) : (
-            <div className={classes.filterButton} onClick={onToggle}>
-              <FilterListIcon className={classes.filterIcon} />
+            <div className={classes.filterButton}>
+              <FilterListIcon className={classes.filterIcon} onClick={() => onToggle(isOpen)} />
             </div>
           )}
         </div>

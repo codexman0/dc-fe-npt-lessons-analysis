@@ -67,10 +67,12 @@ function LearnedApp(props) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(!isMobile);
   const [showChartView, setShowChartView] = useState(savedShowChart);
   const [eventKind, setEventKind] = useState(savedEvent);
+
   const [isNptLoading, nptData, nptTypeFilter, setNptTypeFilter] = useFetchNptData(
     offsetWellIds,
     savedNptTypeFilter
   );
+
   const [
     isLessonsLoading,
     lessonsData,
@@ -81,6 +83,7 @@ function LearnedApp(props) {
     lessonsFilter,
     setLessonsFilter,
   ] = useFetchLessonsData(offsetWellIds, savedLessonsFilter, savedOpFilter, savedDepthFilter);
+
   const [dateFilter, setDateFilter] = useState(savedDateFilter);
   const [tableSettings, setTableSettings] = useState(savedTableSettings);
   const [showTutorial, setShowTutorial] = useState(!savedIsTutorialShown);
@@ -105,9 +108,9 @@ function LearnedApp(props) {
     onSettingsChange
   );
 
-  const handleToggleDrawer = useCallback(() => {
-    setIsDrawerOpen(prev => !prev);
-  }, []);
+  const handleToggleDrawer = value => {
+    setIsDrawerOpen(!value);
+  };
 
   const handleClearFilters = () => {
     setEventKind(TABLE_KIND.npt);
@@ -202,7 +205,7 @@ function LearnedApp(props) {
               onChangeShowWellFullName={handleChangeShowWellFullName}
               onChangeTableSettings={setTableSettings}
               onShowTutorial={handleShowTutorial}
-              well={well}
+              asset={well}
             />
           ) : (
             <div className={classes.loadingWrapper}>

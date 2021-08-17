@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { debounce, uniq, get, minBy, maxBy, isEqual, union } from 'lodash';
+import { debounce, uniq, get, minBy, maxBy, isEqual, union, pick } from 'lodash';
 
 import {
   fetchNptData,
@@ -21,21 +21,6 @@ export function useFetchNptData(wellIds, savedNptTypeFilter) {
 
   useEffect(() => {
     async function fetchData() {
-      const nptTypes = await fetchNptTypeData();
-      const typeData = nptTypes.map(item => {
-        return {
-          key: item.value,
-          title: item.label,
-          color: item.color,
-          checked: true,
-        };
-      });
-      if (savedNptTypeFilter?.length === typeData.length) {
-        setNptTypeData(savedNptTypeFilter);
-      } else {
-        setNptTypeData(typeData);
-      }
-
       const allResult = await Promise.all(wellIds.map(assetId => fetchNptData(assetId)));
       const records = [];
       allResult.forEach(result =>
@@ -44,6 +29,42 @@ export function useFetchNptData(wellIds, savedNptTypeFilter) {
         })
       );
       setNptData(records);
+
+      const typeData = uniq(records.map(record => get(record, ['data', 'type'])).sort());
+      let isEqual = true;
+      if (savedNptTypeFilter && savedNptTypeFilter.length === typeData.length) {
+        typeData.forEach(type => {
+          if (!savedNptTypeFilter.find(item => get(item, 'key') === type)) {
+            isEqual = false;
+          }
+        });
+      } else {
+        isEqual = false;
+      }
+      if (isEqual) {
+        setNptTypeData(savedNptTypeFilter);
+      } else {
+        const nptTypes = await fetchNptTypeData();
+        const data = typeData.map(type => {
+          const pickType = nptTypes.find(item => type === item.value);
+          if (pickType) {
+            return {
+              key: pickType.value,
+              title: pickType.label,
+              color: pickType.color,
+              checked: true,
+            };
+          } else {
+            return {
+              key: type,
+              title: type,
+              color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+              checked: true,
+            };
+          }
+        });
+        setNptTypeData(data);
+      }
 
       setIsLoading(true);
     }

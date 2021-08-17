@@ -20,11 +20,11 @@ function decreaseHazardSize(x, y, width, height) {
     .attr('height', height);
 }
 
-function showMultiHazardTooltip(data, handler, hazardSize) {
+function showMultiHazardTooltip(data, handler, nptSize) {
   const { hazards } = data;
   const option = {
     hazards,
-    hazardSize,
+    nptSize,
     style: {
       padding: '4px',
     },
@@ -38,41 +38,42 @@ function hideMultiHazardTooltip() {
   hazardTooltip.hide(400);
 }
 
-export const renderHazards = (
+export const renderNpts = (
   parentElem,
   depthScale,
-  hazardStartX,
-  hazardSize,
-  hazardGroups,
+  nptStartX,
+  nptSize,
+  nptGroups,
   gradientPatternId,
-  handleClickHazard
+  handleClickNpt
 ) => {
-  const enlargeSize = Math.floor(hazardSize / 4);
+  const enlargeSize = Math.floor(nptSize / 4);
 
   const hazardLayer = parentElem
     .selectAll('g.c-wsc-hazards')
     .data(['hazards'])
     .join('g')
     .attr('class', 'c-wsc-hazards')
-    .attr('transform', `translate(${hazardStartX}, 0)`);
+    .attr('transform', `translate(${nptStartX}, 0)`);
 
-  const singleHazardGroups = hazardGroups.filter(group => group.hazards.length === 1);
-  const multiHazardGroups = hazardGroups.filter(group => group.hazards.length > 1);
-
+  const singleNptGroups = nptGroups.filter(group => group.hazards.length === 1);
+  const multiNptGroups = nptGroups.filter(group => group.hazards.length > 1);
+// console.log('singleNptGroups=', singleNptGroups);
+// console.log('multiNptGroups=', multiNptGroups);
   hazardLayer
     .selectAll('rect.c-wsc-single-hazard')
-    .data(singleHazardGroups)
+    .data(singleNptGroups)
     .join('rect')
     .attr('class', 'c-wsc-single-hazard')
     .attr('x', 0)
     .attr('y', d => depthScale(d.depth))
-    .attr('width', hazardSize)
-    .attr('height', hazardSize)
+    .attr('width', nptSize)
+    .attr('height', nptSize)
     .attr('rx', 2)
     .attr('ry', 2)
     .attr('fill', d => d.hazards[0].color)
     .on('mouseenter', function onEnter(d) {
-      increaseHazardSize.call(this, 0, depthScale(d.depth), hazardSize, hazardSize, enlargeSize);
+      increaseHazardSize.call(this, 0, depthScale(d.depth), nptSize, nptSize, enlargeSize);
       // show tooltip
       if (!d3Event.detail || !d3Event.detail.suppressTooltip) {
         showTooltip({
@@ -81,35 +82,35 @@ export const renderHazards = (
       }
     })
     .on('mouseleave', function onLeave(d) {
-      decreaseHazardSize.call(this, 0, depthScale(d.depth), hazardSize, hazardSize);
+      decreaseHazardSize.call(this, 0, depthScale(d.depth), nptSize, nptSize);
 
       // hide tooltip
       hideTooltip();
     })
     .on('click', function onClick(d) {
-      handleClickHazard(d.hazards[0].id);
+      handleClickNpt(d.hazards[0].id);
     });
 
   hazardLayer
     .selectAll('rect.c-wsc-multi-hazard')
-    .data(multiHazardGroups)
+    .data(multiNptGroups)
     .join('rect')
     .attr('class', 'c-wsc-multi-hazard')
     .attr('x', 0)
     .attr('y', d => depthScale(d.depth))
-    .attr('width', hazardSize)
-    .attr('height', hazardSize)
+    .attr('width', nptSize)
+    .attr('height', nptSize)
     .attr('rx', 2)
     .attr('ry', 2)
     .attr('fill', `url(#${gradientPatternId})`)
     .on('mouseenter', function onEnter(d) {
-      increaseHazardSize.call(this, 0, depthScale(d.depth), hazardSize, hazardSize, enlargeSize);
+      increaseHazardSize.call(this, 0, depthScale(d.depth), nptSize, nptSize, enlargeSize);
       if (!d3Event.detail || !d3Event.detail.suppressTooltip) {
-        showMultiHazardTooltip(d, handleClickHazard, hazardSize);
+        showMultiHazardTooltip(d, handleClickNpt, nptSize);
       }
     })
     .on('mouseleave', function onLeave(d) {
-      decreaseHazardSize.call(this, 0, depthScale(d.depth), hazardSize, hazardSize);
+      decreaseHazardSize.call(this, 0, depthScale(d.depth), nptSize, nptSize);
       hideMultiHazardTooltip();
     });
 };
